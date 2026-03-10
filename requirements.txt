@@ -1,10 +1,12 @@
 streamlit
 requests
 pandas
-base64
 firebase-admin
 qrcode
 fpdf
 python-dotenv
 gspread
 google-auth
+google-cloud-firestore
+plotly          # <--- Ampio ity
+matplotlib      # <--- Ampio koa ity raha mampiasa azy ianao
