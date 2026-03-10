@@ -32,6 +32,7 @@ from dotenv import load_dotenv
 import secrets
 import re
 
+
 def generate_invoice(user_email, plan_name, price):
     pdf = FPDF()
     pdf.add_page()
