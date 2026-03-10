@@ -28,11 +28,11 @@ ticker_html = """
 """
 st.markdown(ticker_html, unsafe_allow_html=True)
 st.write("") # Elanelana kely
-
+st.write(st.secrets)
 # --- CONFIGURATION ---
-#SHEET_ID = st.secrets["SHEET_ID"]
-#SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
-         # "https://www.googleapis.com/auth/drive"]
+SHEET_ID = st.secrets["SHEET_ID"]
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
+          "https://www.googleapis.com/auth/drive"]
 
 #def get_gspread_client(): 
     try:
@@ -840,4 +840,5 @@ def main():
 
 def main():
     show_dashboard()		
+
 
