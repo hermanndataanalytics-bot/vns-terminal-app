@@ -1,6 +1,5 @@
 .env
 .streamlit/
 *.json
-node_modules/
 __pycache__/
-dist/
+*.pyc
