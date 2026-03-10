@@ -1,7 +1,6 @@
 streamlit
 requests
 pandas
-base64
 firebase-admin
 qrcode
 fpdf
