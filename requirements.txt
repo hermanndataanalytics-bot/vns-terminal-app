@@ -3,3 +3,8 @@ requests
 pandas
 base64
 firebase-admin
+qrcode
+fpdf
+python-dotenv
+gspread
+google-auth
