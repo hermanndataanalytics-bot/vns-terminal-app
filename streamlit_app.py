@@ -34,5 +34,20 @@ try:
     db = firestore.Client(credentials=credentials, project=service_account_info['project_id'])
 except Exception as e:
     st.error(f"Olana amin'ny fampitohizana amin'ny Firebase: {e}")
-# Izao vao mampifandray amin'ny Firestore
-# db = firestore.Client(credentials=credentials)
+# 1. Maka ny tsiambaratelo avy amin'ny Streamlit Secrets
+try:
+    # Ny GitHub Secrets dia ho lasa Streamlit Secrets rehefa manao deploy
+    secret_json = st.secrets["GCP_SERVICE_ACCOUNT_JSON"]
+    
+    # Avadika ho diksyonera (dict) ny string JSON
+    info = json.loads(secret_json)
+    
+    # Mamorona credentials
+    credentials = service_account.Credentials.from_service_account_info(info)
+    
+    # Mampifandray amin'ny Firestore
+    db = firestore.Client(credentials=credentials, project=info['project_id'])
+    
+    st.success("✅ Tafandray tsara amin'ny VNS Database!")
+except Exception as e:
+    st.error(f"❌ Tsy nandeha ny fampitohizana: {e}")
