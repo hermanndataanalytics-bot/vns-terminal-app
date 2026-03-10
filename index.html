@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VNS Terminal - Crypto Payment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <style>
+        body { background: #05070a; font-family: 'Inter', sans-serif; color: white; scroll-behavior: smooth; }
+        .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.08); transition: 0.3s; }
+        .glass:hover { border-color: #3b82f6; transform: translateY(-5px); }
+        .gradient-text { background: linear-gradient(90deg,#3b82f6,#06b6d4,#10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero-btn { background: linear-gradient(90deg,#4f46e5,#3b82f6); box-shadow: 0 0 30px rgba(59,130,246,0.4); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="p-6 md:p-12">
+
+    <section class="text-center py-24">
+    
+    <div class="inline-block px-6 py-2 mb-8 rounded-full border border-blue-500/30 text-blue-400 text-sm font-semibold bg-blue-500/5">
+        🔒 Secure Crypto Payments
+    </div>
+
+    <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-8">
+        Pay with 
+        <span class="gradient-text">Crypto</span>,<br>
+        Verified Instantly
+    </h1>
+
+    <p class="text-gray-400 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+        Select your plan, send crypto to our wallet, and submit your transaction hash.
+        We verify your payment and activate your access within minutes.
+    </p>
+
+    <button onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})"
+        class="hero-btn px-8 py-4 rounded-2xl font-bold text-lg">
+        View Plans ↓
+    </button>
+
+	</section>	
+    <section class="max-w-6xl mx-auto mb-24 px-6">
+    <div class="text-center mb-12">
+        <h2 class="text-3xl font-bold mb-4">How It Works</h2>
+        <p class="text-gray-400 text-sm">Three simple steps to activate your subscription with crypto.</p>
+    </div>
+    <div class="grid md:grid-cols-3 gap-8">
+        <div class="glass p-8 rounded-3xl text-center">
+            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 font-bold">1</div>
+            <h3 class="font-bold mb-2">Choose Your Plan</h3>
+            <p class="text-xs text-gray-500">Pick the plan that fits your needs. Monthly or lifetime.</p>
+        </div>
+        <div class="glass p-8 rounded-3xl text-center">
+            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 font-bold">2</div>
+            <h3 class="font-bold mb-2">Send Payment</h3>
+            <p class="text-xs text-gray-500">Copy wallet address and send crypto via TRC20/ERC20.</p>
+        </div>
+        <div class="glass p-8 rounded-3xl text-center">
+            <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 font-bold">3</div>
+            <h3 class="font-bold mb-2">Submit & Verify</h3>
+            <p class="text-xs text-gray-500">Paste TXID and upload screenshot for verification.</p>
+        </div>
+    </div>
+    </section>
+
+    <section id="pricing" class="max-w-7xl mx-auto px-4">
+    <div class="text-center mb-12">
+        <h2 class="text-4xl font-extrabold mb-8">Choose Your Plan</h2>
+        <div class="flex justify-center gap-4">
+            <button id="btn-monthly" onclick="switchBilling('monthly')" class="bg-blue-600 px-6 py-2 rounded-full font-bold">Monthly</button>
+            <button id="btn-lifetime" onclick="switchBilling('lifetime')" class="bg-gray-800 px-6 py-2 rounded-full text-gray-400 font-bold">Lifetime</button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        
+        <div class="glass p-8 rounded-3xl flex flex-col">
+            <h3 class="text-gray-400 font-bold text-sm">BASIC</h3>
+            <div class="my-6 text-4xl font-extrabold">$<span class="price" data-monthly="19" data-lifetime="199">19</span><span class="duration text-xs text-gray-500">/mo</span></div>
+            <ul class="text-xs space-y-3 mb-8 flex-grow text-gray-400">
+                <li>✅ 3 Forex Assets</li>
+                <li>✅ Live Analysis</li>
+                <li>✅ VNS Support</li>
+            </ul>
+            <button onclick="openPayment('BASIC')" class="w-full bg-gray-800 py-3 rounded-xl font-bold hover:bg-gray-700">Pay with Crypto</button>
+        </div>
+
+        <div class="glass p-8 rounded-3xl border-blue-500 relative scale-105 flex flex-col">
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-[10px] px-3 py-1 rounded-full font-bold">POPULAR</span>
+            <h3 class="text-blue-400 font-bold text-sm">PRO</h3>
+            <div class="my-6 text-4xl font-extrabold">$<span class="price" data-monthly="49" data-lifetime="499">49</span><span class="duration text-xs text-gray-500">/mo</span></div>
+            <ul class="text-xs space-y-3 mb-8 flex-grow text-gray-300">
+                <li>✅ 12 Assets</li>
+                <li>✅ AI Analysis</li>
+                <li>✅ PDF Reports</li>
+                <li>✅ Signal Sync</li>
+            </ul>
+            <button onclick="openPayment('PRO')" class="w-full hero-btn py-3 rounded-xl font-bold">Pay with Crypto</button>
+        </div>
+
+        <div class="glass p-8 rounded-3xl flex flex-col">
+            <h3 class="text-gray-400 font-bold text-sm">ELITE</h3>
+            <div class="my-6 text-4xl font-extrabold">$<span class="price" data-monthly="99" data-lifetime="999">99</span><span class="duration text-xs text-gray-500">/mo</span></div>
+            <ul class="text-xs space-y-3 mb-8 flex-grow text-gray-400">
+                <li>✅ Everything in PRO</li>
+                <li>✅ Crypto Quant</li>
+                <li>✅ Neural Predictions</li>
+                <li>✅ Macro Calendar</li>
+            </ul>
+            <button onclick="openPayment('ELITE')" class="w-full bg-gray-800 py-3 rounded-xl font-bold hover:bg-gray-700">Pay with Crypto</button>
+        </div>
+
+        <div class="glass p-8 rounded-3xl flex flex-col">
+            <h3 class="text-gray-400 font-bold text-sm">PREMIUM</h3>
+            <div class="my-6 text-4xl font-extrabold">$<span class="price" data-monthly="149" data-lifetime="1499">149</span><span class="duration text-xs text-gray-500">/mo</span></div>
+            <ul class="text-xs space-y-3 mb-8 flex-grow text-gray-400">
+                <li>✅ Everything in ELITE</li>
+                <li>✅ Full Access</li>
+                <li>✅ Priority 24/7</li>
+                <li>✅ VIP Database</li>
+            </ul>
+            <button onclick="openPayment('PREMIUM')" class="w-full bg-gray-800 py-3 rounded-xl font-bold hover:bg-gray-700">Pay with Crypto</button>
+        </div>
+    </div>
+    </section>
+    <section id="payment-page" class="hidden max-w-5xl mx-auto mt-16">
+        <button onclick="goBack()" class="mb-6 text-blue-400 font-bold">← Back to plans</button>
+        
+        <div id="payment-content">
+            <div class="glass p-8 rounded-3xl mb-8 flex justify-between items-center">
+                <div>
+                    <h2 id="display-plan" class="font-bold text-2xl">PLAN NAME</h2>
+                    <p id="display-billing" class="text-gray-400">Monthly plan</p>
+                </div>
+                <div class="text-4xl font-bold text-blue-400">$<span id="display-price">0</span></div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="glass p-8 rounded-3xl">
+                    <h3 class="font-bold mb-6">Step 1: Send USDT</h3>
+                    <div class="flex gap-4 mb-8">
+                        <button id="btn-trc" onclick="switchNetwork('TRC20')" class="bg-blue-600 flex-1 py-2 rounded-xl font-bold">TRC20</button>
+                        <button id="btn-erc" onclick="switchNetwork('ERC20')" class="bg-gray-800 flex-1 py-2 rounded-xl text-gray-400 font-bold">ERC20</button>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl w-48 h-48 mx-auto mb-8">
+                        <img id="qr-img" src="" class="w-full" alt="QR Code">
+                    </div>
+                    <p id="net-label" class="text-[10px] text-gray-500 font-bold mb-2 uppercase">TRC20 Address</p>
+                    <div id="wallet-addr" class="bg-black p-4 rounded-xl text-xs font-mono break-all border border-gray-800 mb-4"></div>
+                    <button onclick="copyAddr()" class="w-full bg-gray-800 py-2 rounded-xl text-sm font-bold">Copy Address</button>
+                </div>
+
+                <div class="glass p-8 rounded-3xl">
+                    <h3 class="font-bold mb-6">Step 2: Verification</h3>
+                    <input type="email" id="email" placeholder="Email Address" class="w-full bg-transparent border border-gray-800 p-4 rounded-xl mb-4 outline-none focus:border-blue-500">
+                    <input type="text" id="txid" placeholder="Transaction Hash (TXID)" class="w-full bg-transparent border border-gray-800 p-4 rounded-xl mb-4 outline-none focus:border-blue-500">
+                    <p class="text-xs text-gray-500 mb-2 font-bold">Upload Screenshot</p>
+                    <input type="file" id="file" class="w-full text-sm text-gray-500 mb-8">
+                    <button id="sub-btn" onclick="submit()" class="w-full hero-btn py-4 rounded-xl font-bold">Submit Payment</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="successCard" class="hidden bg-gradient-to-br from-emerald-900/40 to-green-800/30 border border-emerald-500/30 rounded-2xl p-10 text-center text-white shadow-2xl backdrop-blur-xl">
+            <div class="flex justify-center mb-6">
+                <div class="bg-emerald-500/20 p-6 rounded-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+            </div>
+            <h2 class="text-2xl font-bold mb-4 text-emerald-400">Payment Submitted!</h2>
+            <p class="text-gray-300 leading-relaxed">
+                Your payment for <span id="success-plan-display" class="text-white font-semibold">PREMIUM (Monthly)</span> is being verified.
+                You will receive a confirmation email once approved.
+            </p>
+            <button onclick="location.reload()" class="mt-8 bg-emerald-600 px-8 py-3 rounded-xl font-bold">Done</button>
+        </div>
+    </section>
+
+    <footer class="bg-[#05070a] border-t border-blue-500/20 mt-24">
+    <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center text-gray-400">
+        
+        <div class="flex items-center gap-3 mb-4 md:mb-0">
+            
+            <!-- Crypto Logo -->
+            <div class="bg-blue-600 p-2 rounded-lg w-9 h-9 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" 
+                     class="w-5 h-5 text-white" 
+                     fill="currentColor" 
+                     viewBox="0 0 24 24">
+                    <path d="M13.5 3v2.1c2.5.3 4.1 1.8 4.1 4 0 2.4-1.7 3.6-4.8 4.2v3.2c1.5-.2 2.5-.9 2.8-2.2h2.7c-.3 2.6-2.2 4.2-5.5 4.5V21h-1.7v-2.2c-3.2-.3-5.3-2.1-5.4-4.8h2.8c.1 1.5 1.1 2.4 2.7 2.6v-3.4c-3-.6-4.6-1.8-4.6-4.2 0-2.3 1.8-3.8 4.6-4V3h1.7zm-1.7 8.1V7.8c-1.4.2-2.2.8-2.2 1.7 0 .9.6 1.4 2.2 1.6zm1.7 2.7v3.4c1.5-.2 2.4-.9 2.4-1.8 0-1-.7-1.4-2.4-1.6z"/>
+                </svg>
+            </div>
+
+            <span class="text-white font-semibold text-lg">CryptoPay</span>
+        </div>
+
+        <div class="text-sm text-gray-500">
+            © 2026 CryptoPay. Secure crypto payment verification.
+        </div>
+
+    </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    
+    <script>
+        emailjs.init("6JFnKWujJ2xBrpeHg");
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAFnzKXhDMpXIRkSZvqTJK07-LLI-E191c",
+            authDomain: "vns-v-483919.firebaseapp.com",
+            projectId: "vns-v-483919",
+            storageBucket: "vns-v-483919.firebasestorage.app",
+            messagingSenderId: "789344087804",
+            appId: "1:789344087804:web:64702f9ff46d248418f179"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const wallets = {
+            'TRC20': 'TA2xKhFrG9Lc53mTpi3stk1VeWVZiqF9mz',
+            'ERC20': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e'
+        };
+
+        let currentBilling = 'monthly';
+        let currentNetwork = 'TRC20';
+
+        function switchBilling(type) {
+            currentBilling = type;
+            document.querySelectorAll('.price').forEach(p => p.innerText = p.getAttribute(`data-${type}`));
+            document.querySelectorAll('.duration').forEach(d => d.innerText = (type === 'monthly' ? '/mo' : ' (Once)'));
+            document.getElementById('btn-monthly').className = (type === 'monthly' ? 'bg-blue-600 px-8 py-2 rounded-full font-bold' : 'bg-gray-800 px-8 py-2 rounded-full text-gray-400 font-bold');
+            document.getElementById('btn-lifetime').className = (type === 'lifetime' ? 'bg-blue-600 px-8 py-2 rounded-full font-bold' : 'bg-gray-800 px-8 py-2 rounded-full text-gray-400 font-bold');
+        }
+
+        function switchNetwork(net) {
+            currentNetwork = net;
+            document.getElementById('wallet-addr').innerText = wallets[net];
+            document.getElementById('net-label').innerText = `${net} Address`;
+            document.getElementById('qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${wallets[net]}`;
+            document.getElementById('btn-trc').className = (net === 'TRC20' ? 'bg-blue-600 flex-1 py-2 rounded-xl font-bold' : 'bg-gray-800 flex-1 py-2 rounded-xl text-gray-400 font-bold');
+            document.getElementById('btn-erc').className = (net === 'ERC20' ? 'bg-blue-600 flex-1 py-2 rounded-xl font-bold' : 'bg-gray-800 flex-1 py-2 rounded-xl text-gray-400 font-bold');
+        }
+
+        function openPayment(plan) {
+            const price = document.querySelector(`button[onclick="openPayment('${plan}')"]`).parentElement.querySelector('.price').innerText;
+            document.getElementById('display-plan').innerText = plan;
+            document.getElementById('display-price').innerText = price;
+            document.getElementById('display-billing').innerText = (currentBilling === 'monthly' ? 'Monthly subscription' : 'Lifetime access');
+            document.getElementById('pricing').classList.add('hidden');
+            document.getElementById('payment-page').classList.remove('hidden');
+            switchNetwork('TRC20');
+            window.scrollTo(0,0);
+        }
+
+        function goBack() {
+            document.getElementById('payment-page').classList.add('hidden');
+            document.getElementById('pricing').classList.remove('hidden');
+        }
+
+        function copyAddr() {
+            navigator.clipboard.writeText(wallets[currentNetwork]);
+            alert("Address copied!");
+        }
+
+        async function submit() {
+            const btn = document.getElementById('sub-btn');
+            const emailValue = document.getElementById('email').value;
+            const txidValue = document.getElementById('txid').value;
+            const file = document.getElementById('file').files[0];
+            const planName = document.getElementById('display-plan').innerText;
+
+            if(!file || !emailValue || !txidValue) return alert("Fenoy ny banga rehetra azafady!");
+
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            try {
+                // A. Upload to ImgBB
+                const formData = new FormData();
+                formData.append("image", file);
+                const res = await fetch(`https://api.imgbb.com/1/upload?key=__IMGBB_API_KEY__`, { method: "POST", body: formData });
+                const data = await res.json();
+                const imageUrl = data.data.url;
+
+                // B. Save to Firestore
+                await db.collection("pending_payments").add({
+                    email: emailValue,
+                    plan: planName,
+                    txid: txidValue,
+                    receipt_url: imageUrl,
+                    status: "pending",
+                    duration: currentBilling === 'monthly' ? 'Monthly' : 'Lifetime',
+                    date: new Date().toISOString()
+                });
+
+                // C. Show Success UI
+                const billingText = currentBilling === 'monthly' ? '(Monthly)' : '(Lifetime)';
+                document.getElementById('success-plan-display').innerText = `${planName} ${billingText}`;
+                
+                document.getElementById('payment-content').classList.add('hidden');
+                document.getElementById('successCard').classList.remove('hidden');
+
+            } catch (e) {
+                console.error(e);
+                alert("Error: " + e.message);
+                btn.disabled = false;
+                btn.innerText = "Submit Payment";
+            }
+        }
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,46 @@
+name: Deploy Multi-App with Secrets
+
+on:
+  push:
+    branches: ["main"] # Mandehana isaky ny manao push amin'ny main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # --- DINGANA 1: HO AN'NY HTML (ImgBB Secret) ---
+      - name: Inject Secrets into HTML
+        run: |
+          # Soloy ny tena sanda avy amin'ny GitHub Secrets ilay __IMGBB_API_KEY__
+          sed -i "s/__IMGBB_API_KEY__/${{ secrets.IMGBB_API_KEY }}/g" index.html
+
+      # --- DINGANA 2: HO AN'NY PYTHON/STREAMLIT ---
+      - name: Set up Streamlit Secrets
+        run: |
+          mkdir -p .streamlit
+          cat << EOF > .streamlit/secrets.toml
+          FOREX_GENAI_KEY = "${{ secrets.FOREX_GENAI_KEY }}"
+          CRYPTO_GENAI_KEY = "${{ secrets.CRYPTO_GENAI_KEY }}"
+          BASE44_API_KEY = "${{ secrets.BASE44_API_KEY }}"
+          BASE44_API_URL = "${{ secrets.BASE44_API_URL }}"
+          IMGBB_API_KEY = "${{ secrets.IMGBB_API_KEY }}"
+          SHEET_ID = "${{ secrets.SHEET_ID }}"
+          SENDER_EMAIL = "${{ secrets.SENDER_EMAIL }}"
+          SENDER_PASSWORD = "${{ secrets.SENDER_PASSWORD }}"
+          SMTP_SERVER = "${{ secrets.SMTP_SERVER }}"
+          SMTP_PORT = ${{ secrets.SMTP_PORT }}
+          
+          [gcp_service_account]
+          ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+          EOF
+
+      # --- DINGANA 3: DEPLOY ---
+      # Raha mampiasa GitHub Pages ianao ho an'ny HTML:
+      - name: Deploy to GitHub Pages
+        uses: Peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
