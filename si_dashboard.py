@@ -30,11 +30,11 @@ st.markdown(ticker_html, unsafe_allow_html=True)
 st.write("") # Elanelana kely
 
 # --- CONFIGURATION ---
-SHEET_ID = st.secrets["SHEET_ID"]
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
-          "https://www.googleapis.com/auth/drive"]
+#SHEET_ID = st.secrets["SHEET_ID"]
+#SCOPES = ["https://www.googleapis.com/auth/spreadsheets",
+         # "https://www.googleapis.com/auth/drive"]
 
-def get_gspread_client(): 
+#def get_gspread_client(): 
     try:
         # 1. Hamarino ny Streamlit Secrets (raha efa ao amin'ny Cloud)
         if hasattr(st, "secrets") and "gcp_service_account" in st.secrets:
@@ -840,3 +840,4 @@ def main():
 
 def main():
     show_dashboard()		
+
