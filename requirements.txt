@@ -8,3 +8,5 @@ fpdf
 python-dotenv
 gspread
 google-auth
+google-cloud-firestore
+imgbbpy
