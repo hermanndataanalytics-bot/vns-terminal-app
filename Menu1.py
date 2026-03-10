@@ -28,6 +28,10 @@ import string
 from dotenv import load_dotenv
 import secrets
 import re
+# 1. Ampiana ny lalana (path) misy ny rakitra rehetra
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
 import si_dashboard
 import Forex_dashboard
 import crypto_intelligence_dashboard
