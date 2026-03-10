@@ -11,3 +11,4 @@ google-cloud-firestore
 imgbbpy
 plotly          # <--- Ampio ity
 matplotlib      # <--- Ampio koa ity raha mampiasa azy ianao
+python-binance
