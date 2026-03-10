@@ -30,6 +30,7 @@ import string
 from dotenv import load_dotenv
 import secrets
 import re
+import si_dashboard
 
 def generate_invoice(user_email, plan_name, price):
     pdf = FPDF()
