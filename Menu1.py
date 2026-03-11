@@ -6,6 +6,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import pandas as pd
 import time
+import datetime
 import base64
 import requests
 import qrcode
@@ -14,13 +15,11 @@ import streamlit.components.v1 as components
 import uuid
 import os
 import sys
-
-# Ireto no "Dashboards" ao amin'ny folder iray ihany
-import si_dashboard
+import si_dashboard 
 import Forex_dashboard
 import crypto_intelligence_dashboard
 import base44_url
-
+import streamlit.components.v1 as components
 from datetime import datetime
 from fpdf import FPDF
 import smtplib
@@ -33,6 +32,7 @@ import string
 from dotenv import load_dotenv
 import secrets
 import re
+
 
 def generate_invoice(user_email, plan_name, price):
     pdf = FPDF()
