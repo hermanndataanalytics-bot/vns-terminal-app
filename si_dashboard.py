@@ -760,8 +760,9 @@ def render_live_market_data():
 
     components.html(tv_html, height=620)
     
-	
+    
     # --- B. BINANCE METRICS & ALERTS ---
+    raw_symbol = ""
     if "BINANCE" in raw_symbol:
         try:
             api_symbol = raw_symbol.split(":")[-1].upper()
@@ -929,11 +930,6 @@ def main():
 
     current_plan = st.session_state.user_data.get("plan", "Free")
 
-    # Sidebar
-    with st.sidebar:
-        st.title("🌐 NAVIGATION")
-        st.write(f"Current Plan: {current_plan}")
-
     # Dashboard
     show_dashboard()
 
@@ -941,4 +937,6 @@ def main():
 # Run app
 if __name__ == "__main__":
     main()
+
+
 
