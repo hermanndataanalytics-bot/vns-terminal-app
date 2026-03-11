@@ -638,8 +638,13 @@ def app():
 
 # --- FUNCTION 1: MAKA DATA AVY AMIN'NY BINANCE ---
 
-# 2. Farito ny 'client' eto (Ity no mamaha ilay fahadisoana)
-client = Client()
+api_key = st.secrets["BINANCE_API_KEY"]
+    api_secret = st.secrets["BINANCE_SECRET_KEY"]
+
+    client = Client(api_key, api_secret)
+
+    raw_symbol = asset_map[selected_pair]["binance"]
+
 
 def get_live_market_data(symbol):
     try:
@@ -755,13 +760,7 @@ def render_live_market_data():
 
     components.html(tv_html, height=620)
     
-    api_key = st.secrets["BINANCE_API_KEY"]
-    api_secret = st.secrets["BINANCE_SECRET_KEY"]
-
-    client = Client(api_key, api_secret)
-
-    raw_symbol = asset_map[selected_pair]["binance"]
-
+	
     # --- B. BINANCE METRICS & ALERTS ---
     if "BINANCE" in raw_symbol:
         try:
