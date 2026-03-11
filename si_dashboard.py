@@ -637,18 +637,9 @@ def app():
 
 
 # --- FUNCTION 1: MAKA DATA AVY AMIN'NY BINANCE ---
-import pandas as pd
-
-import pandas as pd
-from binance.client import Client  #
-
-# 1. Ampidiro ny API Key-nao (na avelao ho foana raha Public Data fotsiny no ilaina)
-api_key = "YOUR_API_KEY"
-api_secret = "YOUR_API_SECRET"
 
 # 2. Farito ny 'client' eto (Ity no mamaha ilay fahadisoana)
 client = Client(api_key, api_secret)  #
-
 
 def get_live_market_data(symbol):
     try:
@@ -918,10 +909,6 @@ def show_dashboard():
     # Final Elite Footer Call
     vns_footer_high_pro_v2()
 
-
-# --- 1. CONFIGURATION (Tsy maintsy eo an-tampony) ---
-st.set_page_config(layout="wide", initial_sidebar_state="expanded")
-
 # --- 2. INITIALIZATION (Fampidirana ny Session State) ---
 if "user_data" not in st.session_state:
     st.session_state.user_data = {"plan": "Free"}
@@ -929,32 +916,25 @@ if "user_data" not in st.session_state:
 # --- 3. NY FUNCTION REHETRA ---
 # (Apetraho eto ireo def check_access(), def show_pricing_page(), sns.)
 
-
-# --- 4. MAIN LOGIC (Ity no mampandeha ny pejy) ---
+# --- MAIN LOGIC ---
 def main():
-    # Alaina ny planina misy amin'izao
+
+    # Plan an'ny user (raha tsy misy dia Free)
+    if "user_data" not in st.session_state:
+        st.session_state.user_data = {"plan": "Free"}
+
     current_plan = st.session_state.user_data.get("plan", "Free")
 
-    # Sidebar foana no hita eo amin'ny sisiny
+    # Sidebar
     with st.sidebar:
         st.title("🌐 NAVIGATION")
-        if st.button("🏠 Home / Pricing"):
-            st.session_state.page = "pricing"
+        st.write(f"Current Plan: {current_plan}")
 
-        st.write("---")
-        st.write(f"**Current Plan:** {current_plan}")
-
-    # Ny lojika mampiseho ny votoatiny
-    if current_plan == "Free":
-        # Raha mbola Free dia asehoy ny Pricing mba hisafidianany
-        show_pricing_page()
-    else:
-        # Raha efa nifidy Plan izy dia asehoy ny Dashboard mifanaraka amin'izany
-        check_access()
-
-
-# Antsoy ny main() mba hiseho ny pejy
-
-
-def main():
+    # Dashboard
     show_dashboard()
+
+
+# Run app
+if __name__ == "__main__":
+    main()
+
