@@ -754,11 +754,11 @@ def render_live_market_data():
     import streamlit.components.v1 as components
 
     components.html(tv_html, height=620)
-	
-	api_key = st.secrets["BINANCE_API_KEY"]
-	api_secret = st.secrets["BINANCE_SECRET_KEY"]
+    
+    api_key = st.secrets["BINANCE_API_KEY"]
+    api_secret = st.secrets["BINANCE_SECRET_KEY"]
 
-	client = Client(api_key, api_secret)
+    client = Client(api_key, api_secret)
 
     raw_symbol = asset_map[selected_pair]["binance"]
 
