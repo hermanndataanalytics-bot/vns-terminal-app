@@ -638,7 +638,7 @@ def app():
 
 # --- FUNCTION 1: MAKA DATA AVY AMIN'NY BINANCE ---
 
-api_key = st.secrets["BINANCE_API_KEY"]
+    api_key = st.secrets["BINANCE_API_KEY"]
     api_secret = st.secrets["BINANCE_SECRET_KEY"]
 
     client = Client(api_key, api_secret)
