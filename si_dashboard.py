@@ -639,7 +639,7 @@ def app():
 # --- FUNCTION 1: MAKA DATA AVY AMIN'NY BINANCE ---
 
 # 2. Farito ny 'client' eto (Ity no mamaha ilay fahadisoana)
-client = Client(api_key, api_secret)  #
+client = Client()
 
 def get_live_market_data(symbol):
     try:
@@ -937,4 +937,5 @@ def main():
 # Run app
 if __name__ == "__main__":
     main()
+
 
