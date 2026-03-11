@@ -15,16 +15,16 @@ import streamlit.components.v1 as components
 import uuid
 import os
 import sys
+import si_dashboard
+import Forex_dashboard
+import crypto_intelligence_dashboard
+import base44_url
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.append(current_dir) # Ity ihany no misy elanelana (4 spaces)
 
 # Ireto kosa averina miankavia tanteraka:
-import si_dashboard
-import Forex_dashboard
-import crypto_intelligence_dashboard
-import base44_url
 import streamlit.components.v1 as components
 from datetime import datetime
 from fpdf import FPDF
