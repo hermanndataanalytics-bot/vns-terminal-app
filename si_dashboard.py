@@ -762,6 +762,7 @@ def render_live_market_data():
     
 	
     # --- B. BINANCE METRICS & ALERTS ---
+	raw_symbol = ""
     if "BINANCE" in raw_symbol:
         try:
             api_symbol = raw_symbol.split(":")[-1].upper()
@@ -941,4 +942,5 @@ def main():
 # Run app
 if __name__ == "__main__":
     main()
+
 
