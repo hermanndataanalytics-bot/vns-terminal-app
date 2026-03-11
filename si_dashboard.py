@@ -754,82 +754,99 @@ def render_live_market_data():
     import streamlit.components.v1 as components
 
     components.html(tv_html, height=620)
+    
 
+
+# --- 1. Binance Client Setup with Safe Fallback ---
+def get_binance_client(timeout=5):
+    """
+    Mamorona Binance client. Raha tsy afaka mifandray dia miverina None.
+    """
+    try:
+        client = Client()  # Raha manana key/secret dia ampidirina eto
+        client.ping(timeout=timeout)
+        return client
+    except Exception as e:
+        st.warning(f"Binance API not reachable: {e}")
+        return None
+
+client = get_binance_client()
+
+# --- 2. Function to get live market data safely ---
+def get_live_market_data_safe(symbol: str):
+    """
+    Maka data amin'ny Binance raha afaka, raha tsy afaka dia fallback data
+    """
+    if client:
+        try:
+            ticker = client.get_symbol_ticker(symbol=symbol)
+            # Eto afaka ampiana indicator toy ny MA50, RSI, volatility raha manana logic
+            return {
+                "price": float(ticker["price"]),
+                "ma50": float(ticker["price"]) * 0.99,  # placeholder
+                "rsi": 50,  # placeholder
+                "volatility": 1.0  # placeholder
+            }
+        except Exception as e:
+            st.warning(f"Could not fetch live data: {e}")
+
+    # Fallback offline data
+    return {
+        "price": 0,
+        "ma50": 0,
+        "rsi": 0,
+        "volatility": 1.0
+    }
+
+# --- 3. Main dashboard function ---
+def show_dashboard(selected_pair="BTCUSDT"):
+    asset_map = {selected_pair: {"binance": f"BINANCE:{selected_pair}"}}  # ohatra
     raw_symbol = asset_map[selected_pair]["binance"]
 
-    # --- B. BINANCE METRICS & ALERTS ---
     if "BINANCE" in raw_symbol:
-        try:
-            api_symbol = raw_symbol.split(":")[-1].upper()
-            live_data = get_live_market_data(api_symbol)
+        api_symbol = raw_symbol.split(":")[-1].upper()
+        live_data = get_live_market_data_safe(api_symbol)
 
-            if live_data:
-                price_val = float(live_data.get("price", 0))
-                ma50_val = float(live_data.get("ma50", 0))
-                rsi_val = float(live_data.get("rsi", 0))
-                vol_val = float(live_data.get("volatility", 1.0))
+        price_val = live_data["price"]
+        ma50_val = live_data["ma50"]
+        rsi_val = live_data["rsi"]
+        vol_val = live_data["volatility"]
 
-                # --- KAJY TP SY STOP LOSS (Dynamic based on Volatility) ---
-                sl_percent = (vol_val * 1.5) / 100
+        # --- Dynamic TP / SL calculation based on volatility ---
+        sl_percent = (vol_val * 1.5) / 100
+        if price_val > ma50_val:  # Bullish
+            stop_loss = price_val * (1 - sl_percent)
+            take_profit = price_val * (1 + sl_percent * 2)
+            signal_label = "🚀 BUY SIGNAL"
+        else:  # Bearish
+            stop_loss = price_val * (1 + sl_percent)
+            take_profit = price_val * (1 - sl_percent * 2)
+            signal_label = "⚠️ SELL SIGNAL"
 
-                if price_val > ma50_val:  # Bullish
-                    stop_loss = price_val * (1 - sl_percent)
-                    take_profit = price_val * (1 + (sl_percent * 2))
-                    signal_label = "🚀 BUY SIGNAL"
-                    status_color = "success"
-                else:  # Bearish
-                    stop_loss = price_val * (1 + sl_percent)
-                    take_profit = price_val * (1 - (sl_percent * 2))
-                    signal_label = "⚠️ SELL SIGNAL"
-                    status_color = "error"
+        # --- Metrics display ---
+        st.info(f"**Current Strategy:** {signal_label} | **Risk/Reward:** 1:2")
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Live Price", f"${price_val:,.2f}")
+        c2.metric("RSI (14)", f"{rsi_val:.1f}")
+        c3.metric("Take Profit (TP)", f"${take_profit:,.2f}", delta=f"{take_profit-price_val:,.2f}")
+        c4.metric("Stop Loss (SL)", f"${stop_loss:,.2f}", delta=f"{stop_loss-price_val:,.2f}", delta_color="inverse")
 
-                # --- VISUAL TRADE CARD ---
-                # Ity dia mampiseho ny andalana TP sy SL ho hitan'ny maso alohan'ny chart
-                st.info(f"**Current Strategy:** {signal_label} | **Risk/Reward:** 1:2")
+        # --- Display TP/SL text on chart ---
+        st.markdown(
+            f"""
+            <div style="background-color: #1e1e1e; padding: 10px; border-radius: 5px; border-left: 5px solid #00ff00;">
+                <span style="color: #00ff00; font-weight: bold;">[TP] Take Profit: ${take_profit:,.2f}</span><br>
+                <span style="color: #ffffff; font-weight: bold;">[EP] Entry Price: ${price_val:,.2f}</span><br>
+                <span style="color: #ff4b4b; font-weight: bold;">[SL] Stop Loss: ${stop_loss:,.2f}</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-                # Metrics Display
-                c1, c2, c3, c4 = st.columns(4)
-                c1.metric("Live Price", f"${price_val:,.2f}")
-                c2.metric("RSI (14)", f"{rsi_val:.1f}")
-                c3.metric(
-                    "Take Profit (TP)",
-                    f"${take_profit:,.2f}",
-                    delta=f"{take_profit-price_val:,.2f}",
-                )
-                c4.metric(
-                    "Stop Loss (SL)",
-                    f"${stop_loss:,.2f}",
-                    delta=f"{stop_loss-price_val:,.2f}",
-                    delta_color="inverse",
-                )
-
-                # --- DISPLAY PRICE LEVELS AS TEXT ON CHART ---
-                # Mampiasa Markdown mba hanahaka ny andalana amin'ny chart
-                st.markdown(
-                    f"""
-                <div style="background-color: #1e1e1e; padding: 10px; border-radius: 5px; border-left: 5px solid #00ff00;">
-                    <span style="color: #00ff00; font-weight: bold;">[TP] Take Profit: ${take_profit:,.2f}</span><br>
-                    <span style="color: #ffffff; font-weight: bold;">[EP] Entry Price: ${price_val:,.2f}</span><br>
-                    <span style="color: #ff4b4b; font-weight: bold;">[SL] Stop Loss: ${stop_loss:,.2f}</span>
-                </div>
-                """,
-                    unsafe_allow_html=True,
-                )
-
-        except Exception as e:
-            st.error(f"Sync Error: {e}")
-
-
-# --- FUNCTION 3: MAIN DASHBOARD ROUTING ---
-def show_dashboard():
-    user_plan = st.session_state.get("user_plan", "Free").lower()
-
-    # 1. Asehoy ny Live Data (Ho an'ny rehetra)
-    render_live_market_data()
-
+    # --- Divider ---
     st.divider()
 
-    # 2. Support Section
+    # --- 2. Support Section ---
     with st.expander("💬 VNS Support & Feedback"):
         with st.form("feedback_vns"):
             u_name = st.text_input("Operator Name")
@@ -838,6 +855,7 @@ def show_dashboard():
                 st.success("Message transmitted to VNS Satellite.")
 
     st.divider()
+
 
     # 3. AI & PDF Section (PRO vs BASIC)
     st.markdown("#### 🤖 Neural Intelligence Hub")
@@ -908,7 +926,8 @@ def show_dashboard():
 
     # Final Elite Footer Call
     vns_footer_high_pro_v2()
-
+# --- 4. Run dashboard ---
+show_dashboard("BTCUSDT")
 # --- 2. INITIALIZATION (Fampidirana ny Session State) ---
 if "user_data" not in st.session_state:
     st.session_state.user_data = {"plan": "Free"}
