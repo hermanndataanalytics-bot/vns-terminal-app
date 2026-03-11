@@ -16,3 +16,4 @@ yfinance
 ta
 google-genai
 reportlab
+oauth2client
