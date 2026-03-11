@@ -14,3 +14,4 @@ matplotlib      # <--- Ampio koa ity raha mampiasa azy ianao
 python-binance
 yfinance
 ta
+google-genai
