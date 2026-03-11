@@ -18,7 +18,9 @@ import sys
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
-    sys.path.append(current_dir)
+    sys.path.append(current_dir) # Ity ihany no misy elanelana (4 spaces)
+
+# Ireto kosa averina miankavia tanteraka:
 import si_dashboard
 import Forex_dashboard
 import crypto_intelligence_dashboard
