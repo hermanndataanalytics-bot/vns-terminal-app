@@ -300,7 +300,7 @@ apply_custom_css()
 # 2. FIREBASE INITIALIZATION
 # =========================================================
 if not firebase_admin._apps:
-    cred = credentials.Certificate("serviceAccountKey.json")
+    cred = credentials.Certificate(dict(st.secrets["firebase"]))
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
