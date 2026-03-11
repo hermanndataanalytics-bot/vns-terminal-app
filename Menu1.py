@@ -15,7 +15,6 @@ import streamlit.components.v1 as components
 import uuid
 import os
 import sys
-import si_dashboard
 import Forex_dashboard
 import crypto_intelligence_dashboard
 import base44_url
@@ -38,7 +37,7 @@ import string
 from dotenv import load_dotenv
 import secrets
 import re
-
+import si_dashboard
 
 def generate_invoice(user_email, plan_name, price):
     pdf = FPDF()
