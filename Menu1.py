@@ -15,6 +15,7 @@ import streamlit.components.v1 as components
 import uuid
 import os
 import sys
+
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.append(current_dir)
@@ -40,11 +41,11 @@ import re
 def generate_invoice(user_email, plan_name, price):
     pdf = FPDF()
     pdf.add_page()
-    
+
     # Titre
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="OFFICIAL INVOICE - YOUR APP NAME", ln=True, align='C')
-    
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(200, 10, txt="OFFICIAL INVOICE - YOUR APP NAME", ln=True, align="C")
+
     # Detail
     pdf.set_font("Arial", size=12)
     pdf.ln(10)
@@ -53,33 +54,40 @@ def generate_invoice(user_email, plan_name, price):
     pdf.cell(200, 10, txt=f"Amount Paid: ${price}", ln=True)
     pdf.cell(200, 10, txt=f"Status: PAID", ln=True)
     pdf.cell(200, 10, txt=f"Date: {time.strftime('%Y-%m-%d')}", ln=True)
-    
+
     # Footer
     pdf.ln(20)
-    pdf.set_font("Arial", 'I', 10)
-    pdf.cell(200, 10, txt="Thank you for choosing our AI Trading Intelligence.", ln=True, align='C')
-    
+    pdf.set_font("Arial", "I", 10)
+    pdf.cell(
+        200,
+        10,
+        txt="Thank you for choosing our AI Trading Intelligence.",
+        ln=True,
+        align="C",
+    )
+
     filename = f"invoice_{user_email}.pdf"
     pdf.output(filename)
     return filename
 
-def apply_ultra_premium_ui(status_text="SYSTEM ONLINE"):
-        
-        # Loko arakaraka ny status
-        if status_text.upper() == "SYSTEM ONLINE":
-            led_color = "#22c55e"
-            accent_color = "#00f0ff"
-            text_glow = "rgba(0, 240, 255, 0.4)"
-            status_bg = "rgba(34,197,94,0.15)"
-            status_border = "rgba(34,197,94,0.3)"
-        else:
-            led_color = "#ef4444"
-            accent_color = "#ff4b4b"
-            text_glow = "rgba(255, 75, 75, 0.4)"
-            status_bg = "rgba(239,68,68,0.15)"
-            status_border = "rgba(239,68,68,0.3)"
 
-        html_code = f"""
+def apply_ultra_premium_ui(status_text="SYSTEM ONLINE"):
+
+    # Loko arakaraka ny status
+    if status_text.upper() == "SYSTEM ONLINE":
+        led_color = "#22c55e"
+        accent_color = "#00f0ff"
+        text_glow = "rgba(0, 240, 255, 0.4)"
+        status_bg = "rgba(34,197,94,0.15)"
+        status_border = "rgba(34,197,94,0.3)"
+    else:
+        led_color = "#ef4444"
+        accent_color = "#ff4b4b"
+        text_glow = "rgba(255, 75, 75, 0.4)"
+        status_bg = "rgba(239,68,68,0.15)"
+        status_border = "rgba(239,68,68,0.3)"
+
+    html_code = f"""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
 
@@ -225,18 +233,21 @@ def apply_ultra_premium_ui(status_text="SYSTEM ONLINE"):
             </div>
         </div>
         """
-        components.html(html_code, height=350)
+    components.html(html_code, height=350)
+
 
 # =========================================================
 # 1. PAGE CONFIG & THEME
 # =========================================================
 st.set_page_config(page_title="VNS TERMINATOR PRO", layout="wide")
 
+
 def apply_custom_css():
     # 1. Jereo raha efa tafiditra (logged_in) ny mpampiasa
     is_logged_in = st.session_state.get("logged_in", False)
-    
-    st.markdown(f"""
+
+    st.markdown(
+        f"""
     <style>
    
     /* Signal Card (mangarahara kely mba ho hita ny sary ao aoriana raha ao amin'ny login) */
@@ -281,7 +292,10 @@ def apply_custom_css():
         text-shadow: 1px 1px 3px rgba(0, 0, 0, 1);
     }}
     </style>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
+
 
 # Antsoy ny fonction (mila antsoina isaky ny rerun ny Streamlit)
 apply_custom_css()
@@ -295,21 +309,27 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
+
 # =========================================================
 # 3. DATABASE FUNCTIONS
 # =========================================================
 @st.cache_data(ttl=300)
 def fetch_signals(market_type):
     col = "forex_signals" if market_type == "Forex" else "crypto_signals"
-    docs = db.collection(col)\
-             .order_by("timestamp", direction=firestore.Query.DESCENDING)\
-             .limit(10).get()
+    docs = (
+        db.collection(col)
+        .order_by("timestamp", direction=firestore.Query.DESCENDING)
+        .limit(10)
+        .get()
+    )
     return [doc.to_dict() for doc in docs]
+
 
 def get_user_data(email):
     uid = email.replace(".", "_")
     doc = db.collection("users").document(uid).get()
     return doc.to_dict() if doc.exists else None
+
 
 # =========================================================
 # 4. IMAGE UPLOAD (IMGBB) - Voarindra
@@ -320,40 +340,41 @@ def upload_to_imgbb(image_file):
     """
     api_key = st.secrets["IMGBB_API_KEY"]
     url = "https://api.imgbb.com/1/upload"
-    
+
     try:
         # Vakiana ny sary ary avadika ho base64
         image_data = image_file.read()
         base64_image = base64.b64encode(image_data)
-        
-        payload = {
-            "key": api_key,
-            "image": base64_image
-        }
-        
+
+        payload = {"key": api_key, "image": base64_image}
+
         # Alefa ny request
         response = requests.post(url, payload)
         res_data = response.json()
-        
+
         if response.status_code == 200:
             # Ity 'url' ity no ilay lien mivantana (.jpg na .png)
             return res_data["data"]["url"]
         else:
-            print(f"Error ImgBB: {res_data.get('error', {}).get('message', 'Unknown error')}")
+            print(
+                f"Error ImgBB: {res_data.get('error', {}).get('message', 'Unknown error')}"
+            )
             return None
-            
+
     except Exception as e:
         print(f"Exception upload: {e}")
         return None
-        
+
+
 def get_base64_of_bin_file(bin_file):
-    with open(bin_file, 'rb') as f:
+    with open(bin_file, "rb") as f:
         data = f.read()
     return base64.b64encode(data).decode()
 
+
 def set_png_as_page_bg(bin_file):
     bin_str = get_base64_of_bin_file(bin_file)
-    page_bg_img = f'''
+    page_bg_img = f"""
     <style>
     .stApp {{
         background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url("data:image/png;base64,{bin_str}");
@@ -362,9 +383,10 @@ def set_png_as_page_bg(bin_file):
         background-attachment: fixed;
     }}
     </style>
-    '''
+    """
     st.markdown(page_bg_img, unsafe_allow_html=True)
-    
+
+
 # =========================================================
 # 1. CONFIG & INITIALIZATION
 # =========================================================
@@ -383,18 +405,18 @@ if "selected_duration" not in st.session_state:
 if "last_invoice_id" not in st.session_state:
     st.session_state.last_invoice_id = None
 
-                    
+
 def send_email_with_invoice(receiver_email, plan_name, invoice_path):
     sender_email = st.secrets["SENDER_EMAIL"]
     sender_password = st.secrets["SENDER_PASSWORD"]
     smtp_server = st.secrets["SMTP_SERVER"]
     smtp_port = st.secrets["SMTP_PORT"]
-    
+
     msg = MIMEMultipart()
-    msg['From'] = f"VNS Terminator Sales <{sender_email}>"
-    msg['To'] = receiver_email
-    msg['Subject'] = f"✅ Access Activated: {plan_name} - VNS TERMINATOR"
-    
+    msg["From"] = f"VNS Terminator Sales <{sender_email}>"
+    msg["To"] = receiver_email
+    msg["Subject"] = f"✅ Access Activated: {plan_name} - VNS TERMINATOR"
+
     body = f"""
     Dear Customer,
     
@@ -406,15 +428,17 @@ def send_email_with_invoice(receiver_email, plan_name, invoice_path):
     Best regards,
     The VNS Terminator Team
     """
-    msg.attach(MIMEText(body, 'plain'))
+    msg.attach(MIMEText(body, "plain"))
 
     # Fametahana ny PDF (Invoice)
     try:
         with open(invoice_path, "rb") as attachment:
-            part = MIMEBase('application', 'octet-stream')
+            part = MIMEBase("application", "octet-stream")
             part.set_payload(attachment.read())
             encoders.encode_base64(part)
-            part.add_header('Content-Disposition', f"attachment; filename= {invoice_path}")
+            part.add_header(
+                "Content-Disposition", f"attachment; filename= {invoice_path}"
+            )
             msg.attach(part)
     except Exception as e:
         print(f"Error attaching PDF: {e}")
@@ -431,7 +455,10 @@ def send_email_with_invoice(receiver_email, plan_name, invoice_path):
         print(f"Professional Mail Error: {e}")
         return False
 
+
 payment_url = st.secrets["PAYMENT_URL"]
+
+
 def verify_payment(txid):
     """Maka porofo fandoavana amin'ny backend"""
     try:
@@ -444,12 +471,14 @@ def verify_payment(txid):
     except Exception as e:
         st.error(f"Error verifying payment: {e}")
         return False
-        
+
+
 def admin_panel():
     # --- 1. CONFIGURATION & IMPORTS ---
     try:
         from firebase_admin import firestore
         import time
+
         db = firestore.client()
     except Exception as e:
         st.error(f"Error connecting to DB: {e}")
@@ -458,42 +487,44 @@ def admin_panel():
     # --- 2. ADMIN CHECK (ETO NO NAMBOARINA) ---
     # Alaina avy ao amin'ny session_state ny email vao azo ampiasaina
     user_email = st.session_state.get("user_email", "")
-    
-    is_admin = (user_email == "hermannhe18@gmail.com")
-    
+
+    is_admin = user_email == "hermannhe18@gmail.com"
+
     if not is_admin:
         st.warning("Tsy manana alalana ianao hijery ity pejy ity.")
         return
-       
+
     st.title("👨‍💻 Admin Command Center")
     t1, t2, t3 = st.tabs(["💳 Pending Payments", "📡 Signal Control", "👥 User List"])
 
     # --- TAB 1: PENDING PAYMENTS ---
     with t1:
         st.subheader("Fankatoavana ny Fandoavam-bola")
-        
+
         try:
             # Fakana ny fandoavam-bola miandry
-            pends = db.collection("pending_payments").where("status", "==", "pending").get()
-            
+            pends = (
+                db.collection("pending_payments").where("status", "==", "pending").get()
+            )
+
             if not pends:
                 st.info("Tsy misy fandoavam-bola miandry amin'izao fotoana izao.")
             else:
                 for p in pends:
                     pay = p.to_dict()
-                    
+
                     # --- MITADY UID NA EMAIL ---
-                    user_email = pay.get('uid') or pay.get('email')
-                    
+                    user_email = pay.get("uid") or pay.get("email")
+
                     with st.container(border=True):
                         col1, col2, col3 = st.columns([2, 2, 1])
-                        
+
                         with col1:
                             if not user_email:
                                 st.error("⚠️ User ID is Missing!")
                             else:
                                 st.markdown(f"👤 **User:** `{user_email}`")
-                            
+
                             st.markdown(f"💎 **Plan Requested:** `{pay.get('plan')}`")
                             st.markdown(f"🔗 **TXID:** `{pay.get('txid')}`")
                             st.caption(f"📅 Date: {pay.get('date', '-')}")
@@ -511,45 +542,64 @@ def admin_panel():
 
                         with col3:
                             st.write("Action")
-                            
-                            
+
                             # --- 1. BOKOTRA APPROVE ---
-                            if st.button("Approve ✅", key=f"btn_app_{p.id}", use_container_width=True):
+                            if st.button(
+                                "Approve ✅",
+                                key=f"btn_app_{p.id}",
+                                use_container_width=True,
+                            ):
                                 if user_email:
                                     try:
                                         # A. Faritana aloha ny plan sy ny sanda
                                         payment_data = p.to_dict()
-                                        actual_plan = payment_data.get('plan', 'Basic Access') 
-                                        
+                                        actual_plan = payment_data.get(
+                                            "plan", "Basic Access"
+                                        )
+
                                         # B. Mikarakara ny Invoice PDF
                                         prices_map = {
-                                            "Basic Access": 19, 
-                                            "Pro Access": 49, 
-                                            "Elite Access": 99, 
-                                            "Premium Elite": 149
+                                            "Basic Access": 19,
+                                            "Pro Access": 49,
+                                            "Elite Access": 99,
+                                            "Premium Elite": 149,
                                         }
                                         paid_amount = prices_map.get(actual_plan, 0)
-                                        invoice_file = generate_invoice(user_email, actual_plan, paid_amount)
+                                        invoice_file = generate_invoice(
+                                            user_email, actual_plan, paid_amount
+                                        )
 
                                         # C. Mandefa mailaka miaraka amin'ny Invoice
-                                        success = send_email_with_invoice(user_email, actual_plan, invoice_file)
-                                        
+                                        success = send_email_with_invoice(
+                                            user_email, actual_plan, invoice_file
+                                        )
+
                                         if success:
-                                            st.success("Mailaka sy Invoice nalefa soa aman-tsara!")
+                                            st.success(
+                                                "Mailaka sy Invoice nalefa soa aman-tsara!"
+                                            )
 
                                         # D. Update Firestore User Access
                                         uid = user_email.replace(".", "_")
                                         user_ref = db.collection("users").document(uid)
-                                        user_ref.set({
-                                            "email": user_email,
-                                            "plan": actual_plan, 
-                                            "expiry": time.time() + (30 * 24 * 60 * 60)
-                                        }, merge=True)
+                                        user_ref.set(
+                                            {
+                                                "email": user_email,
+                                                "plan": actual_plan,
+                                                "expiry": time.time()
+                                                + (30 * 24 * 60 * 60),
+                                            },
+                                            merge=True,
+                                        )
 
                                         # E. Update status pending_payments ho approved
-                                        db.collection("pending_payments").document(p.id).update({"status": "approved"})
-                                        
-                                        st.success(f"Nekena ny {actual_plan} ho an'i {user_email}!")
+                                        db.collection("pending_payments").document(
+                                            p.id
+                                        ).update({"status": "approved"})
+
+                                        st.success(
+                                            f"Nekena ny {actual_plan} ho an'i {user_email}!"
+                                        )
                                         st.balloons()
                                         time.sleep(2)
                                         st.rerun()
@@ -558,9 +608,15 @@ def admin_panel():
                                         st.error(f"Firestore Error: {e}")
 
                             # --- 2. BOKOTRA REJECT ---
-                            if st.button("Reject ❌", key=f"btn_rej_{p.id}", use_container_width=True):
+                            if st.button(
+                                "Reject ❌",
+                                key=f"btn_rej_{p.id}",
+                                use_container_width=True,
+                            ):
                                 try:
-                                    db.collection("pending_payments").document(p.id).update({"status": "rejected"})
+                                    db.collection("pending_payments").document(
+                                        p.id
+                                    ).update({"status": "rejected"})
                                     st.warning("Fandoavam-bola nolavina.")
                                     time.sleep(1)
                                     st.rerun()
@@ -569,7 +625,7 @@ def admin_panel():
 
         except Exception as e:
             st.error(f"Tsy nahomby ny fakana data: {e}")
-            
+
     # --- TAB 2: SEND SIGNAL ---
     with t2:
         st.subheader("Andefasana Signal Vaovao")
@@ -585,15 +641,17 @@ def admin_panel():
         if submitted:
             if pa and en:
                 col_name = "forex_signals" if m == "Forex" else "crypto_signals"
-                db.collection(col_name).add({
-                    "pair": pa.upper(),
-                    "type": ty,
-                    "entry": en,
-                    "tp": tp if tp else "TBD",
-                    "sl": sl if sl else "TBD",
-                    "tf": "H1",
-                    "timestamp": firestore.SERVER_TIMESTAMP
-                })
+                db.collection(col_name).add(
+                    {
+                        "pair": pa.upper(),
+                        "type": ty,
+                        "entry": en,
+                        "tp": tp if tp else "TBD",
+                        "sl": sl if sl else "TBD",
+                        "tf": "H1",
+                        "timestamp": firestore.SERVER_TIMESTAMP,
+                    }
+                )
                 st.success("Signal nalefa soa aman-tsara! ✅")
             else:
                 st.error("Fenoy ny Pair sy ny Entry azafady.")
@@ -604,30 +662,39 @@ def admin_panel():
         try:
             import gspread
             from google.oauth2.service_account import Credentials
-            
-            scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+
+            scope = [
+                "https://www.googleapis.com/auth/spreadsheets",
+                "https://www.googleapis.com/auth/drive",
+            ]
             if "gcp_service_account" not in st.secrets:
-                st.error("Tsy hita ny credentials 'gcp_service_account' ao amin'ny secrets.")
+                st.error(
+                    "Tsy hita ny credentials 'gcp_service_account' ao amin'ny secrets."
+                )
             else:
                 creds_info = st.secrets["gcp_service_account"]
                 creds = Credentials.from_service_account_info(creds_info, scopes=scope)
                 client = gspread.authorize(creds)
-                
+
                 # Open Sheet
                 spreadsheet = client.open("Drafitra Vns")
                 sheet = spreadsheet.worksheet("users")
                 records = sheet.get_all_records()
-                
+
                 df = pd.DataFrame(records) if records else pd.DataFrame()
-                
+
                 # Editor
-                edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic", key="vns_ed_v10")
-                
+                edited_df = st.data_editor(
+                    df, use_container_width=True, num_rows="dynamic", key="vns_ed_v10"
+                )
+
                 # Save Button (TSY MAINTSY MIFANARAKA NY INDENTATION)
                 if st.button("Tehirizo ny fiovana 💾", key="btn_save_sheet"):
                     try:
-                        data_to_save = [edited_df.columns.values.tolist()] + edited_df.values.tolist()
-                        sheet.update(range_name='A1', values=data_to_save)
+                        data_to_save = [
+                            edited_df.columns.values.tolist()
+                        ] + edited_df.values.tolist()
+                        sheet.update(range_name="A1", values=data_to_save)
                         st.success("✅ Tafiditra soa aman-tsara ny fanovana!")
                         time.sleep(1)
                         st.rerun()
@@ -635,15 +702,16 @@ def admin_panel():
                         st.error(f"Tsy nahomby ny fitehirizana: {e}")
         except Exception as e:
             st.error(f"Google Sheets Error: {e}")
-                   
+
+
 def main_app():
-    
+
     # 1. Alao ny sanda avy amin'ny session_state
     # Raha mbola tsy misy ao dia omeo sanda default (ohatra: "dashboard")
     if "current_page" not in st.session_state:
         st.session_state.current_page = "dashboard"
-        
-    current_page = st.session_state.current_page # Eto vao voafaritra ny variable local
+
+    current_page = st.session_state.current_page  # Eto vao voafaritra ny variable local
 
     # 2. Ny sisa amin'ny setup (user_plan, sns.)
     user_plan = st.session_state.get("user_plan", "Free Access")
@@ -652,7 +720,7 @@ def main_app():
     # Ary ampidirina ao anaty lisitra ny "pro" (sora-madinika)
     plan_lowercase = user_plan.lower()
     has_pro_access = any(p in plan_lowercase for p in ["elite", "premium", "pro"])
-    
+
     # 4. ANTSOINA NY SIDEBAR (Tsy maintsy milahatra amin'ny setup eo ambony)
     render_sidebar()
 
@@ -661,7 +729,7 @@ def main_app():
         st.success(f"🌟 Access Level: {user_plan}")
     else:
         st.info(f"💡 Access Level: {user_plan}")
-        
+
     # --- 4. ROUTING LOGIC (PAGE SELECTION) ---
 
     # 1. Alao ny email sy ny plan avy ao amin'ny session_state (ETO NY FIX)
@@ -675,18 +743,18 @@ def main_app():
             admin_panel()
         else:
             st.error("⛔ Access Denied.")
-            
+
     # --- BASIC ANALYTICS DASHBOARD ---
     elif current_page == "basic_dashboard":
-       si_dashboard.main()		
-        
+        si_dashboard.main()
+
     # --- FANOVANA ETO: Avela hiditra ny "basic" ---
     elif current_page == "pro_dashboard" or current_page == "forex_dashboard":
         # Jereo raha misy "basic", "pro", "elite", sns.
         allowed_pro = ["basic", "pro", "elite", "premium", "vip"]
         if any(keyword in user_plan_raw for keyword in allowed_pro):
             # IZAO: Na basic aza izy dia misokatra ny Forex Dashboard
-            Forex_dashboard.main() 
+            Forex_dashboard.main()
         else:
             st.warning("🔒 This section requires at least a Basic/Pro Access.")
 
@@ -703,10 +771,11 @@ def main_app():
         else:
             st.error("🔒 Access Restricted to VIP Members.")
 
-        
+
 def render_sidebar():
     # --- 1. PREMIUM CUSTOM CSS ---
-    st.markdown("""
+    st.markdown(
+        """
         <style>
             [data-testid="stSidebar"] {
                 background-color: #05070a;
@@ -735,44 +804,51 @@ def render_sidebar():
                 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
             }
         </style>
-    """, unsafe_allow_html=True)
-    
+    """,
+        unsafe_allow_html=True,
+    )
 
     with st.sidebar:
         # --- 2. LOGO SECTION ---
-        st.markdown("""
+        st.markdown(
+            """
             <div style='text-align: center; padding-bottom: 20px;'>
                 <h1 style='color: white; font-size: 26px; margin: 0;'>🚀 VNS <span style='color: #3b82f6;'>TERMINATOR</span></h1>
                 <p style='color: #64748b; font-size: 10px; text-transform: uppercase; letter-spacing: 2px;'>Neural Intelligence Hub</p>
             </div>
-        """, unsafe_allow_html=True)
-        
+        """,
+            unsafe_allow_html=True,
+        )
+
         st.divider()
 
         # --- 3. VARIABLE DEFINITIONS (ATAO ETO AMBONY FOANA IRETO) ---
         user_email = st.session_state.get("user_email", "Guest")
         user_plan_raw = st.session_state.get("user_plan", "Free")
-        
+
         # ETO NO NAMARITANA AZY (Fix for NameError)
         user_plan_clean = str(user_plan_raw).lower().strip()
-        user_plan = str(user_plan_raw).title() 
-        
-        has_new_update = True 
+        user_plan = str(user_plan_raw).title()
+
+        has_new_update = True
 
         # Famaritana ny vidiny
-        prices = { "Basic": "19", "Pro": "49", "Elite": "99", "Premium": "149"}
+        prices = {"Basic": "19", "Pro": "49", "Elite": "99", "Premium": "149"}
         current_price = prices.get(user_plan, "19")
 
         # Invoice ID Logic
         if "last_invoice_id" not in st.session_state:
             date_str = time.strftime("%y%m%d")
-            random_str = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+            random_str = "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=4)
+            )
             st.session_state.last_invoice_id = f"VNS-{date_str}-{random_str}"
-        
+
         invoice_id = st.session_state.last_invoice_id
 
         # --- 4. DISPLAY PROFILE CARD ---
-        st.markdown(f"""
+        st.markdown(
+            f"""
             <div class="nav-card">
                 <div style='font-size: 11px; color: #64748b; text-transform: uppercase;'>Operator ID</div>
                 <div style='font-weight: bold; color: white; margin-bottom: 10px;'>{user_email}</div>
@@ -782,28 +858,35 @@ def render_sidebar():
                     </span>
                 </div>
             </div>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
 
         # --- 5. COMMAND CENTER (NAVIGATION) ---
-        st.markdown("<p style='font-size: 11px; font-weight: bold; color: #64748b; margin: 15px 0 10px 5px;'>CORE COMMANDS</p>", unsafe_allow_html=True)
+        st.markdown(
+            "<p style='font-size: 11px; font-weight: bold; color: #64748b; margin: 15px 0 10px 5px;'>CORE COMMANDS</p>",
+            unsafe_allow_html=True,
+        )
 
         # Bokotra Analytics Dashboard (Hita foana)
         unique_key = f"btn_analytics_{st.session_state.get('user_plan', 'guest')}_{datetime.now().strftime('%M%S')}"
-        if st.sidebar.button("📄 ANALYTICS DASHBOARD", use_container_width=True, key=unique_key):
+        if st.sidebar.button(
+            "📄 ANALYTICS DASHBOARD", use_container_width=True, key=unique_key
+        ):
             st.session_state.current_page = "basic_dashboard"
             st.rerun()
 
         # Famaritana ny Access Levels
         access_levels = {
-            "PRO DASHBOARD": ["basic", "pro", "elite", "premium", "vip"], 
+            "PRO DASHBOARD": ["basic", "pro", "elite", "premium", "vip"],
             "ELITE DASHBOARD": ["elite", "premium", "vip"],
-            "VIP DASHBOARD": ["premium", "vip"]
+            "VIP DASHBOARD": ["premium", "vip"],
         }
 
         for label, allowed in access_levels.items():
             icon = "⚡" if "PRO" in label else "🧠" if "ELITE" in label else "≡"
             is_allowed = any(p in user_plan_clean for p in allowed)
-            
+
             if is_allowed:
                 if st.button(f"{icon} {label}", use_container_width=True):
                     # FIX ETO: Raha PRO DASHBOARD no tsindriny dia alefa any amin'ny forex_dashboard izy
@@ -813,11 +896,14 @@ def render_sidebar():
                         st.session_state.current_page = label.lower().replace(" ", "_")
                     st.rerun()
             else:
-                st.markdown(f"<div style='padding: 10px; color: #475569; font-size: 13px; opacity: 0.6;'>🔒 {label}</div>", unsafe_allow_html=True)
-                
+                st.markdown(
+                    f"<div style='padding: 10px; color: #475569; font-size: 13px; opacity: 0.6;'>🔒 {label}</div>",
+                    unsafe_allow_html=True,
+                )
+
         # --- 6. DYNAMIC PREMIUM INVOICE DISPLAY (Nohavaozina ho an'ny PRO & ELITE) ---
         current_page = st.session_state.get("current_page", "basic_dashboard").lower()
-        
+
         # 1. FARITANA NY TARGER (Izay planina tiana ho tratrana manaraka)
         # Raha PRO izy, ny ELITE no target. Raha ELITE, ny VIP no target.
         if "free" in user_plan_clean:
@@ -825,19 +911,20 @@ def render_sidebar():
             show_invoice = True
         elif "basic" in user_plan_clean:
             target_price, target_label = "49", "PRO UPGRADE"
-            show_invoice = True # Asehoy foana ny card ho an'ny Basic
+            show_invoice = True  # Asehoy foana ny card ho an'ny Basic
         elif "pro" in user_plan_clean:
             target_price, target_label = "99", "ELITE UPGRADE"
-            show_invoice = True # Eto no fanitsiana: Miseho ny Card ho an'ny PRO
+            show_invoice = True  # Eto no fanitsiana: Miseho ny Card ho an'ny PRO
         elif "elite" in user_plan_clean:
             target_price, target_label = "149", "VIP UPGRADE"
-            show_invoice = True # Miseho ny Card ho an'ny ELITE
+            show_invoice = True  # Miseho ny Card ho an'ny ELITE
         else:
-            show_invoice = False # VIP na hafa
+            show_invoice = False  # VIP na hafa
 
         # 2. RENDERING NY INVOICE CARD
         if show_invoice:
-            st.markdown(f"""
+            st.markdown(
+                f"""
             <div style="background: linear-gradient(145deg, #0a0a0a, #151515); padding: 20px; border-radius: 18px; border: 1px solid #facc15; box-shadow: 0px 4px 25px rgba(250, 204, 21, 0.2); text-align: center; margin-bottom: 15px;">
                 <div style="color:#facc15; font-size: 32px; font-weight: 800; letter-spacing: -1px;">{target_price} USDT</div>
                 <div style="color:#94a3b8; font-size: 12px; margin-top: 2px; text-transform: uppercase; font-weight: bold;">{target_label}</div>
@@ -847,28 +934,38 @@ def render_sidebar():
                     <span style="color:#475569; font-size: 9px;">ID: {invoice_id}</span>
                 </div>
             </div>
-            """, unsafe_allow_html=True)
+            """,
+                unsafe_allow_html=True,
+            )
 
             # 3. NY BOKOTRA PROCEED (Ity no nanjavona teo)
-            st.link_button(f"PROCEED TO {target_label} 🚀", "https://pay.vn-s-terminator.com/", use_container_width=True)
-            
+            st.link_button(
+                f"PROCEED TO {target_label} 🚀",
+                "https://pay.vn-s-terminator.com/",
+                use_container_width=True,
+            )
+
         # --- ADMIN & LOGOUT ---
         if user_email == "hermannhe18@gmail.com":
             if st.button("⚙️ SYSTEM ADMIN", use_container_width=True, type="primary"):
                 st.session_state.current_page = "Admin Panel"
                 st.rerun()
 
-        if st.button("🚪 TERMINATE SESSION", use_container_width=True, type="secondary"):
-            for key in list(st.session_state.keys()): del st.session_state[key]
+        if st.button(
+            "🚪 TERMINATE SESSION", use_container_width=True, type="secondary"
+        ):
+            for key in list(st.session_state.keys()):
+                del st.session_state[key]
             st.session_state.logged_in = False
             st.rerun()
-            
+
 
 def auth_page(db=None):
     # --- 1. UI & BACKGROUND ---
     try:
-        bin_str = get_base64_of_bin_file("vns_robot_hero.jpg") 
-        st.markdown(f"""
+        bin_str = get_base64_of_bin_file("vns_robot_hero.jpg")
+        st.markdown(
+            f"""
             <style>
             .stApp {{
                 background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), 
@@ -886,9 +983,13 @@ def auth_page(db=None):
                 box-shadow: 0 20px 50px rgba(0,0,0,0.6);
             }}
             </style>
-        """, unsafe_allow_html=True)
+        """,
+            unsafe_allow_html=True,
+        )
     except Exception:
-        st.markdown("<style>.stApp {background-color: #0e1117;}</style>", unsafe_allow_html=True)
+        st.markdown(
+            "<style>.stApp {background-color: #0e1117;}</style>", unsafe_allow_html=True
+        )
 
     apply_ultra_premium_ui("SYSTEM ONLINE")
 
@@ -898,26 +999,37 @@ def auth_page(db=None):
 
     # Fonctions utilitaires
     def get_password_strength(password):
-        if not password: return "", ""
+        if not password:
+            return "", ""
         score = 0
-        if len(password) >= 8: score += 1
-        if re.search(r"[a-z]", password) and re.search(r"[A-Z]", password): score += 1
-        if re.search(r"\d", password): score += 1
-        if re.search(r"[!@#$%^&*(),.?\":{}|<>]", password): score += 1
-        if len(password) < 6 or score < 2: return "🔴 Weak", "low"
-        elif score == 3: return "🟡 Strong", "medium"
-        else: return "🟢 Very Strong", "high"
+        if len(password) >= 8:
+            score += 1
+        if re.search(r"[a-z]", password) and re.search(r"[A-Z]", password):
+            score += 1
+        if re.search(r"\d", password):
+            score += 1
+        if re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+            score += 1
+        if len(password) < 6 or score < 2:
+            return "🔴 Weak", "low"
+        elif score == 3:
+            return "🟡 Strong", "medium"
+        else:
+            return "🟢 Very Strong", "high"
 
     def generate_secure_password(length=12):
         alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-        return ''.join(secrets.choice(alphabet) for i in range(length))
+        return "".join(secrets.choice(alphabet) for i in range(length))
 
     # --- 3. LOGIC REGISTER ---
     if st.session_state.auth_mode == "register":
         with st.form("vns_reg_form"):
-            st.markdown("<h2 style='text-align:center; color:white;'>📝 REGISTRATION</h2>", unsafe_allow_html=True)
+            st.markdown(
+                "<h2 style='text-align:center; color:white;'>📝 REGISTRATION</h2>",
+                unsafe_allow_html=True,
+            )
             new_email = st.text_input("Email (Operator ID)")
-            
+
             col_pass, col_gen = st.columns([3, 1])
             with col_pass:
                 new_password = st.text_input("Set Password", type="password")
@@ -930,29 +1042,40 @@ def auth_page(db=None):
             strength_text, level = get_password_strength(new_password)
             if new_password:
                 st.markdown(f"**Security Level:** {strength_text}")
-            
+
             confirm_p = st.text_input("Confirm Password", type="password")
             accept_terms = st.checkbox("I agree to the VNS Terminator Terms of Service")
-            reg_submitted = st.form_submit_button("CREATE OPERATOR ID", use_container_width=True)
+            reg_submitted = st.form_submit_button(
+                "CREATE OPERATOR ID", use_container_width=True
+            )
 
         if reg_submitted:
-            if not accept_terms: st.error("❌ Accept terms first.")
-            elif level == "low": st.error("❌ Password too weak.")
-            elif new_password != confirm_p: st.error("❌ Passwords do not match.")
+            if not accept_terms:
+                st.error("❌ Accept terms first.")
+            elif level == "low":
+                st.error("❌ Password too weak.")
+            elif new_password != confirm_p:
+                st.error("❌ Passwords do not match.")
             elif new_email and new_password:
                 uid = new_email.replace(".", "_")
                 try:
-                    if db.collection('users').document(uid).get().exists:
+                    if db.collection("users").document(uid).get().exists:
                         st.error("🚫 Already registered.")
                     else:
-                        db.collection('users').document(uid).set({
-                            "uid": uid, "email": new_email, "password": new_password,
-                            "plan": "Free", "created_at": firestore.SERVER_TIMESTAMP
-                        })
+                        db.collection("users").document(uid).set(
+                            {
+                                "uid": uid,
+                                "email": new_email,
+                                "password": new_password,
+                                "plan": "Free",
+                                "created_at": firestore.SERVER_TIMESTAMP,
+                            }
+                        )
                         st.success("✅ Created! Please login.")
                         st.session_state.auth_mode = "login"
                         st.rerun()
-                except Exception as e: st.error(f"Error: {e}")
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
         if st.button("Back to Login"):
             st.session_state.auth_mode = "login"
@@ -961,20 +1084,25 @@ def auth_page(db=None):
     # --- 4. LOGIC LOGIN (Ito no mampipoitra ny Formulaire Login) ---
     elif st.session_state.auth_mode == "login":
         with st.form("vns_login_form"):
-            st.markdown("<h2 style='text-align:center; color:white;'>🔒 SYSTEM ACCESS</h2>", unsafe_allow_html=True)
+            st.markdown(
+                "<h2 style='text-align:center; color:white;'>🔒 SYSTEM ACCESS</h2>",
+                unsafe_allow_html=True,
+            )
             email = st.text_input("Email")
             password = st.text_input("Password", type="password")
-            login_submitted = st.form_submit_button("ACCESS TERMINAL", use_container_width=True)
+            login_submitted = st.form_submit_button(
+                "ACCESS TERMINAL", use_container_width=True
+            )
 
         if login_submitted:
             if email and password:
                 uid = email.replace(".", "_")
-                user_doc = db.collection('users').document(uid).get()
+                user_doc = db.collection("users").document(uid).get()
 
                 if user_doc.exists:
                     data = user_doc.to_dict()
 
-                    if password == data.get('password'):
+                    if password == data.get("password"):
                         st.session_state.logged_in = True
                         st.session_state.user_email = email
                         st.session_state.user_plan = data.get("plan", "Free Access")
@@ -984,21 +1112,23 @@ def auth_page(db=None):
                         st.rerun()
 
                     else:
-                        st.error("❌ Wrong password.")	
+                        st.error("❌ Wrong password.")
         if st.button("New Operator? Create Account"):
             st.session_state.auth_mode = "register"
             st.rerun()
-            
+
+
 # =========================================================
 # GLOBAL EXECUTION CONTROL
 # =========================================================
 
+
 def run_app():
     # 1. Jereo raha efa tafiditra ny mpampiasa
     if not st.session_state.get("logged_in", False):
-        auth_page(db)   # pejy login
+        auth_page(db)  # pejy login
     else:
-        main_app()      # app principale
+        main_app()  # app principale
 
 
 # =========================================================
