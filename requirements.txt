@@ -18,3 +18,4 @@ google-genai
 reportlab
 oauth2client
 streamlit-autorefresh
+openai
