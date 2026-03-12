@@ -57,25 +57,116 @@ TIMEFRAMES = {"15m": ("7d", "15m"), "1H": ("60d", "1h"), "Daily": ("1y", "1d")}
 # ==============================
 # 2. AI INTELLIGENCE & NEWS
 # ==============================
+# -------------------------------------------------
+# Gemini Client Initialization
+# -------------------------------------------------
+def get_ai_client():
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+        client = genai.Client(api_key=api_key)
+        return client
+    except Exception as e:
+        return None
+
+
+# -------------------------------------------------
+# Deep AI Market Analysis
+# -------------------------------------------------
 def get_ai_deep_analysis(asset_label, current_price, df):
-    # Maka ny data 10 farany ho an'ny AI
-    last_data = df.tail(15).to_string()
-    # Ampiasaina ny asset_label sy current_price (mifanaraka amin'ny parameter)
-    prompt = f"Act as a hedge fund analyst. Analyze {asset_label} at ${current_price}. Data: {last_data}. Give institutional bias, key support/resistance, and TP/SL."
+
+    # Maka ny data farany ho an'ny AI
     try:
-        # Ataovy azo antoka fa gemini-1.5-flash no ao
-        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        last_data = df.tail(15).to_string()
+    except:
+        last_data = "No market dataframe available"
+
+    prompt = f"""
+You are a professional hedge fund quantitative analyst.
+
+Asset: {asset_label}
+Current Price: {current_price}
+
+Recent Market Data:
+{last_data}
+
+Provide a concise institutional-style analysis including:
+
+1. Market Bias (Bullish / Bearish / Neutral)
+2. Key Support Levels
+3. Key Resistance Levels
+4. Suggested Entry Zone
+5. Stop Loss
+6. Take Profit targets
+7. Short explanation of market structure
+
+Respond in clear trading format.
+"""
+
+    try:
+
+        client = get_ai_client()
+
+        if client is None:
+            return "⚠️ AI system unavailable (API key missing)."
+
+        res = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
         return res.text
-    except Exception as e: 
-        return f"AI Error: {str(e)}" # Mba ho hita ny error raha misy
-        
+
+    except Exception as e:
+        return f"AI Error: {str(e)}"
+    
+# -------------------------------------------------
+# Gemini Client
+# -------------------------------------------------
+def get_ai_client():
+    try:
+        api_key = st.secrets["GEMINI_API_KEY"]
+        client = genai.Client(api_key=api_key)
+        return client
+    except Exception as e:
+        return None
+
+
+# -------------------------------------------------
+# Live Market News
+# -------------------------------------------------
 def get_live_news(asset):
-    prompt = f"Provide 3 latest high-impact market news headlines for {asset} as of {datetime.now().date()}."
+
+    today = datetime.now().date()
+
+    prompt = f"""
+You are a financial news terminal similar to Bloomberg.
+
+Provide the 3 latest high-impact market news headlines
+relevant to {asset} as of {today}.
+
+Rules:
+- Only short headlines
+- Focus on macro, crypto, forex or institutional news
+- Maximum 1 line per headline
+"""
+
     try:
-        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+
+        client = get_ai_client()
+
+        if client is None:
+            return "⚠️ AI news service unavailable."
+
+        res = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
         return res.text
-    except: return "News unavailable."
- 
+
+    except Exception as e:
+        return f"News unavailable. ({str(e)})"
+        
 # ==============================
 # 3. PDF EXPORT (LOGO + QR)
 # ==============================
@@ -824,46 +915,90 @@ def main(limit=12):
                 """, unsafe_allow_html=True)
                 
             # =========================================================
-            # 5. NEURAL PREDICTION SECTION (Premium & Elite) - FULL WIDTH
+            # 5. NEURAL PREDICTION SECTION (Premium & Elite)
             # =========================================================
+
             user_plan_raw = str(st.session_state.get("user_plan", "Free Access")).lower()
 
-            # Ovaina eto ny fepetra mba hidiran'ny Premium
+            # Premium / Elite / VIP access
             if any(plan in user_plan_raw for plan in ["premium", "elite", "vip"]):
-                # Mampiasa container mba hangeza ny faritra iasany
+
                 with st.container():
+
                     with st.expander("🧠 GEMINI NEURAL PREDICTION", expanded=True):
-                        
-                        # --- 1. Ny Bokotra (Midadasika) ---
-                        if st.button("🛰️ RUN DEEP ARTIFICIAL INTELLIGENCE ANALYSIS", use_container_width=True):
-                            with st.spinner("🤖 Gemini Neural Engine is calculating market structures..."):
-                                result = get_ai_deep_analysis(
-                                    ASSET_MAP[ticker],
-                                    ls["Close"],
-                                    df
+
+                        # -------------------------------------------------
+                        # 1. RUN AI BUTTON
+                        # -------------------------------------------------
+                        if st.button(
+                            "🛰️ RUN DEEP ARTIFICIAL INTELLIGENCE ANALYSIS",
+                            use_container_width=True
+                        ):
+
+                            try:
+                                asset_label = ASSET_MAP.get(ticker, ticker)
+                                current_price = float(ls.get("Close", 0))
+
+                                with st.spinner("🤖 Gemini Neural Engine is calculating market structures..."):
+
+                                    result = get_ai_deep_analysis(
+                                        asset_label,
+                                        current_price,
+                                        df
+                                    )
+
+                                    st.session_state["active_ai_data"] = result
+                                    st.session_state["ai_scan_time"] = datetime.now().strftime("%H:%M:%S")
+
+                            except Exception as e:
+                                st.error(f"AI execution error: {e}")
+
+                        st.markdown("---")
+
+                        # -------------------------------------------------
+                        # 2. AI RESULT PANEL
+                        # -------------------------------------------------
+                        user_plan_raw = str(st.session_state.get("user_plan", "Free")).lower()
+
+                        if any(plan in user_plan_raw for plan in ["premium", "elite", "vip"]):
+
+                            if "active_ai_data" in st.session_state:
+
+                                scan_time = st.session_state.get("ai_scan_time", "Unknown")
+
+                                st.markdown(f"### 📊 Intelligence Report ({scan_time})")
+
+                                st.markdown(
+                                    f"""
+                                    <div style="
+                                        background-color:#0e1117;
+                                        padding:20px;
+                                        border-left:5px solid #00ff88;
+                                        border-radius:10px;
+                                        font-size:15px;
+                                        line-height:1.6;
+                                    ">
+                                    {st.session_state["active_ai_data"]}
+                                    </div>
+                                    """,
+                                    unsafe_allow_html=True
                                 )
-                                # Ampiasaina ny anarana generic "ai_data" fa tsy "elite_ai_data" intsony
-                                st.session_state["active_ai_data"] = result
-                                st.session_state["ai_scan_time"] = datetime.now().strftime("%H:%M:%S")
 
-                        st.markdown("---") # Tsipika manasaraka kely
+                            else:
 
-                        # --- 2. Ny Vokatry ny AI (Midadasika) ---
-                        if "active_ai_data" in st.session_state:
-                            st.markdown(f"### 📊 Intelligence Report ({st.session_state['ai_scan_time']})")
-                            
-                            st.markdown(f"""
-                            <div style="background-color: #0e1117; padding: 20px; border-left: 5px solid #00ff88; border-radius: 10px;">
-                                {st.session_state["active_ai_data"]}
-                            </div>
-                            """, unsafe_allow_html=True)
+                                st.info(
+                                    "💡 Click the button above to synchronize with the **Gemini Neural Network** "
+                                    "and generate institutional-grade market intelligence."
+                                )
+
                         else:
-                            st.info("💡 Click the button above to synchronize with Gemini Neural Network.")
+                            # Hafatra ho an'ny Free users
+                            st.warning(
+                                "🔒 **AI Neural Prediction is locked.**\n\n"
+                                "Upgrade to **Premium or Elite** to unlock institutional-grade AI market analysis."
+                            )
 
-            else:
-                # Hafatra ho an'ny Free users sisa
-                st.warning("🔒 **AI Neural Prediction** is locked. Upgrade to Premium or Elite to access institutional-grade AI analysis.")
-                
+
             # ==========================================
             # 2. SESSION STATE INITIALIZATION
             # ==========================================
@@ -1023,10 +1158,22 @@ def main(limit=12):
                 with st.expander("📊 DETAILED STRATEGY REPORT", expanded=True):
                     st.markdown(st.session_state.ai_comment)
                     
+                # ------------------------------------------------
+                # GEMINI CLIENT
+                # ------------------------------------------------
+                def get_ai_client():
+                    try:
+                        api_key = st.secrets["GEMINI_API_KEY"]
+                        return genai.Client(api_key=api_key)
+                    except:
+                        return None
+
+
                 # ==========================================
                 # 6. GEMINI CIO BRIEFING
                 # ==========================================
                 st.markdown("---")
+                st.subheader("🧠 Institutional AI Intelligence")
 
                 if st.button(
                     "🤖 GENERATE CIO BRIEFING",
@@ -1034,64 +1181,141 @@ def main(limit=12):
                     key="btn_cio_gemini"
                 ):
 
-                    with st.spinner("Gemini Flash is analyzing market structure..."):
+                    client = get_ai_client()
 
-                        prompt = f"""
-                        Act as a Chief Investment Officer (CIO). Analyze this Forex/Gold trade:
-                        - Asset: {ticker_name}
-                        - Current Price: {current_price}
-                        - Volatility (ATR): {atr:.5f}
-                        - Risk per Trade: {risk_pct_input*100}%
-                        - Recommended Lot: {st.session_state.calculated_lot}
-                        - Stop Loss: {sl_pips:.1f} pips
-                        - Take Profit: {tp_pips:.1f} pips (RR 1:2)
+                    if client is None:
+                        st.error("AI system unavailable. API key missing.")
+                    else:
 
-                        Provide a concise strategic brief (3 sentences max).
-                        Focus on risk quality and whether the ATR supports the current SL.
-                        Use a professional, institutional tone.
-                        IMPORTANT: End with a Confidence Score like this: [SCORE: XX].
-                        """
+                        with st.spinner("Gemini Flash is analyzing market structure..."):
 
-                        try:
-                            res = client.models.generate_content(
-                                model="gemini-2.5-flash",
-                                contents=prompt
-                            )
+                            prompt = f"""
+                Act as a Chief Investment Officer (CIO) of a hedge fund.
 
-                            full_text = res.text
+                Analyze this Forex / Gold trade:
 
-                            match = re.search(r"\[SCORE:\s*(\d+)\]", full_text)
-                            st.session_state.trade_score = (
-                                int(match.group(1)) if match else 50
-                            )
+                Asset: {ticker_name}
+                Current Price: {current_price}
+                ATR Volatility: {atr:.5f}
+                Risk per Trade: {risk_pct_input*100:.2f}%
+                Recommended Lot Size: {st.session_state.get("calculated_lot",0)}
+                Stop Loss: {sl_pips:.1f} pips
+                Take Profit: {tp_pips:.1f} pips (Risk Reward 1:2)
 
-                            clean_text = re.sub(
-                                r"\[SCORE:\s*\d+\]",
-                                "",
-                                full_text
-                            ).strip()
+                Provide a concise institutional briefing (maximum 3 sentences).
 
-                            c_left, c_right = st.columns([2, 1])
+                Focus on:
+                • Risk quality
+                • Whether ATR supports the stop loss
+                • Institutional trade viability
 
-                            with c_left:
-                                st.info(
-                                    f"**CIO Strategic Briefing:**\n\n{clean_text}"
+                End the response with:
+                [SCORE: XX]
+                Where XX is a confidence score between 0 and 100.
+                """
+
+                            try:
+
+                                res = client.models.generate_content(
+                                    model="gemini-2.5-flash",
+                                    contents=prompt
                                 )
 
-                            with c_right:
-                                score = st.session_state.trade_score
+                                full_text = res.text
 
-                                if score >= 75:
-                                    st.success(f"### Score: {score}% \n**HIGH CONVICTION**")
+                                # --------------------------------
+                                # Extract AI score
+                                # --------------------------------
+                                match = re.search(r"\[SCORE:\s*(\d+)\]", full_text)
+
+                                score = int(match.group(1)) if match else 50
+
+                                st.session_state.trade_score = score
+
+                                clean_text = re.sub(
+                                    r"\[SCORE:\s*\d+\]",
+                                    "",
+                                    full_text
+                                ).strip()
+
+                                # =====================================
+                                # CIO STRATEGIC BRIEF
+                                # =====================================
+                                left, right = st.columns([2,1])
+
+                                with left:
+
+                                    st.info(
+                                        f"**CIO Strategic Briefing:**\n\n{clean_text}"
+                                    )
+
+                                with right:
+
+                                    st.metric("AI Score", f"{score}%")
+                                    st.progress(score/100)
+
+                                    if score >= 75:
+                                        st.success("HIGH CONVICTION")
+                                    elif score >= 40:
+                                        st.warning("TACTICAL ENTRY")
+                                    else:
+                                        st.error("HIGH RISK / AVOID")
+
+                                # =====================================
+                                # AI CONFIDENCE GAUGE
+                                # =====================================
+                                st.markdown("---")
+                                st.markdown("### 🧠 AI Confidence Gauge")
+
+                                g1, g2 = st.columns([1,3])
+
+                                with g1:
+                                    st.metric("Confidence", f"{score}%")
+
+                                with g2:
+                                    st.progress(score/100)
+
+                                # =====================================
+                                # TRADE PROBABILITY PANEL
+                                # =====================================
+                                st.markdown("### 📊 Trade Probability")
+
+                                win_probability = min(95, max(10, score))
+
+                                if score >= 70:
+                                    regime = "Trending Market"
+                                    risk_quality = "Low Risk"
                                 elif score >= 40:
-                                    st.warning(f"### Score: {score}% \n**TACTICAL ENTRY**")
+                                    regime = "Mixed Market"
+                                    risk_quality = "Moderate Risk"
                                 else:
-                                    st.error(f"### Score: {score}% \n**HIGH RISK / AVOID**")
+                                    regime = "Unstable Market"
+                                    risk_quality = "High Risk"
 
-                                st.progress(score / 100)
+                                c1, c2, c3 = st.columns(3)
 
-                        except Exception as e:
-                            st.error(f"AI Offline: {e}")
+                                c1.metric("Win Probability", f"{win_probability}%")
+                                c2.metric("Market Regime", regime)
+                                c3.metric("Risk Quality", risk_quality)
+
+                                # =====================================
+                                # INSTITUTIONAL RISK METER
+                                # =====================================
+                                st.markdown("### 🏦 Institutional Risk Meter")
+
+                                risk_level = 100 - score
+
+                                st.progress(risk_level/100)
+
+                                if risk_level <= 25:
+                                    st.success("Risk Level: LOW")
+                                elif risk_level <= 60:
+                                    st.warning("Risk Level: MODERATE")
+                                else:
+                                    st.error("Risk Level: HIGH")
+
+                            except Exception as e:
+                                st.error(f"AI Offline: {e}")
 
 
                 # ==========================================
