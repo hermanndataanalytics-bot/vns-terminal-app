@@ -283,11 +283,23 @@
 
             try {
                 // A. Upload to ImgBB
-                const formData = new FormData();
-                formData.append("image", file);
-                const res = await fetch(`https://api.imgbb.com/1/upload?key=__IMGBB_API_KEY__`, { method: "POST", body: formData });
-                const data = await res.json();
-                const imageUrl = data.data.url;
+				const formData = new FormData();
+				formData.append("image", file);
+
+				const IMGBB_API_KEY = "YOUR_IMGBB_KEY";
+
+				const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+					method: "POST",
+					body: formData
+				});
+
+				const data = await res.json();
+
+				if (!data.success) {
+					throw new Error("Image upload failed");
+				}
+
+				const imageUrl = data.data.url;
 
                 // B. Save to Firestore
                 await db.collection("pending_payments").add({
