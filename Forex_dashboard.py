@@ -88,46 +88,45 @@ def get_ai_client():
         return None
 
 # -------------------------------------------------
+from groq import Groq
 import streamlit as st
-from groq import Groq # Aza adino ny nampiditra 'groq' ao amin'ny requirements.txt
 
 def get_ai_deep_analysis(asset_label, current_price, df):
-    # 1. Undatabase Preparation
+    # Fanomanana ny Prompt
     try:
         last_data = df.tail(15).to_string()
     except:
-        last_data = "No market dataframe available"
+        last_data = "No market data."
 
-    prompt = f"Analyze {asset_label} at price {current_price}. Recent data: {last_data}..."
+    prompt = f"Analyze {asset_label} at {current_price}. Recent data: {last_data}"
 
-    # --- DINGANA 1: ANDRAMANA NY GEMINI (PRIMARY) ---
+    # --- 1. GEMINI 2.5 FLASH (Primary) ---
     try:
-        client = get_ai_client()
-        res = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
-        return f"🟢 **[Gemini Analysis]**\n\n{res.text}"
+        client = get_ai_client() # Ny client-nao efa misy
+        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        return f"🟢 **[Gemini 2.5 Flash]**\n\n{res.text}"
 
-    except Exception as e:
-        # --- DINGANA 2: FALLBACK ANY AMIN'NY GROQ (SECONDARY - GEMMA 3 27B) ---
-        st.warning("🔄 Gemini quota reached. Switching to Gemma 3 27B...")
-        
+    except Exception:
+        # --- 2. GEMMA 3 27B (Google Backup) ---
         try:
-            # Miantso ny Groq API
-            groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+            st.info("🔄 Gemini busy... Trying Gemma 3 27B")
+            res = client.models.generate_content(model="models/gemma-3-27b-it", contents=prompt)
+            return f"🟡 **[Gemma 3 27B]**\n\n{res.text}"
             
-            completion = groq_client.chat.completions.create(
-                model="gemma-3-27b-it", # Modely matanjaka manana quota 14,400
-                messages=[
-                    {"role": "system", "content": "You are an institutional hedge fund analyst."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-                max_tokens=1000,
-            )
-            return f"🟡 **[Gemma 3 27B Backup]**\n\n{completion.choices[0].message.content}"
-            
-        except Exception as backup_error:
-            return f"❌ All AI models failed. Error: {str(backup_error)}"
-			
+        except Exception:
+            # --- 3. GROQ LLAMA 3.3 (Emergency Backup) ---
+            st.warning("🔄 Switching to Groq (Llama 3.3 70B)")
+            try:
+                groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+                completion = groq_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7
+                )
+                return f"🔵 **[Groq - Llama 3.3]**\n\n{completion.choices[0].message.content}"
+            except Exception as e:
+                return f"❌ All AI models failed. Error: {str(e)}"
+				
 # -------------------------------------------------
 # Live Market News
 # -------------------------------------------------
@@ -1574,4 +1573,4 @@ def show_page():
     except Exception as e:
         st.error(f"Error loading page: {e}")
 
-# Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
+# Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany                             
