@@ -19,4 +19,4 @@ reportlab
 oauth2client
 streamlit-autorefresh
 openai
-python-kaleido
+kaleido
