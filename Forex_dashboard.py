@@ -113,7 +113,7 @@ def get_ai_deep_analysis(asset_label, current_price, df):
             return "⚠️ AI system unavailable (API key issue)."
 
         # Hamarino raha mbola 'gemini-2.5-flash' no iantsoana ny model-nao
-        # (Ohatra: 'gemini-2.5-flash' matetika no ampiasaina izao)
+        # (Ohatra: 'gemini-1.5-flash' matetika no ampiasaina izao)
         res = client.models.generate_content(
             model="gemini-2.5-flash", 
             contents=prompt
@@ -121,7 +121,7 @@ def get_ai_deep_analysis(asset_label, current_price, df):
         return res.text
 
     except Exception as e:
-        return f"AI Error: {str(e)}"
+        return f"AI Error: {str(e)}
 # -------------------------------------------------
 # Live Market News
 # -------------------------------------------------
@@ -190,117 +190,178 @@ def init_session_state():
 
 init_session_state()
     
-def export_pro_pdf(asset, ls, tp, sl, ai_comment, ai_calendar, fig, cio_report):
-  
+def export_ultra_premium_pdf(asset, ls, tp, sl, ai_comment, ai_calendar,
+                             fig, cio_report, trades):
+
+    import numpy as np
+    from io import BytesIO
+    from datetime import datetime
+    import matplotlib.pyplot as plt
+    import plotly.io as pio
+    import qrcode
+
+    from reportlab.platypus import (
+        SimpleDocTemplate, Paragraph, Spacer,
+        Image, Table, TableStyle
+    )
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib import colors
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+
     buf = BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
     elements = []
-    # Ampidiro eto ny lalana mankany amin'ny sary (path)
-    logo_path = "vns_logo.png" 
-    try:
-        logo = Image(logo_path, width=150, height=150) # Azonao ovaina ny habeny
-        elements.append(logo)
-    except:
-        # Raha tsy hita ny sary dia soratra no mivoaka
-        elements.append(Paragraph("⚡ VNS TERMINATOR AI", style_header))
-    
-    elements.append(Spacer(1, 8))
-    
     styles = getSampleStyleSheet()
-    
-    # --- STYLES COMPACT (Mampihena ny elanelana) ---
-    style_header = ParagraphStyle(name='H1', parent=styles['Heading1'], fontSize=20, textColor=colors.HexColor("#D4AF37"), alignment=TA_CENTER, spaceAfter=5)
-    style_section = ParagraphStyle(name='Sec', parent=styles['Heading2'], fontSize=12, textColor=colors.HexColor("#D4AF37"), spaceBefore=8, spaceAfter=4)
-    style_body = ParagraphStyle(name='Body', parent=styles['Normal'], fontSize=10, leading=12, spaceAfter=6)
-    style_footer = ParagraphStyle(name='Footer', fontSize=8, textColor=colors.grey, alignment=TA_CENTER, spaceBefore=10)
 
-    # 1. HEADER
-    elements.append(Paragraph(f"⚡ VNS TERMINATOR: {asset}", style_header))
-    elements.append(Paragraph(f"STRATEGIC PERFORMANCE REPORT • {datetime.now().strftime('%Y-%m-%d %H:%M')}", style_footer))
-    elements.append(Spacer(1, 10))
+    # ---------------------
+    # Styles
+    # ---------------------
+    header = ParagraphStyle("header", parent=styles["Heading1"], fontSize=22,
+                            alignment=TA_CENTER, textColor=colors.HexColor("#D4AF37"))
+    section = ParagraphStyle("section", parent=styles["Heading2"], fontSize=13, textColor=colors.HexColor("#D4AF37"))
+    body = ParagraphStyle("body", parent=styles["Normal"], fontSize=10, leading=12)
+    footer = ParagraphStyle("footer", fontSize=8, alignment=TA_CENTER, textColor=colors.grey)
+    disc_style = ParagraphStyle("disc", fontSize=7, textColor=colors.grey, alignment=TA_LEFT)
 
-    # 2. MAIN PRICE CHART (Sary mivantana avy amin'ny fig)
-    img_bytes = pio.to_image(fig, format="png", width=1000, height=500, scale=2)
-    chart_img = Image(BytesIO(img_bytes), width=480, height=240)
-    elements.append(chart_img)
-    elements.append(Spacer(1, 10))
+    # ---------------------
+    # Logo + Cover
+    # ---------------------
+    try:
+        elements.append(Image("vns_logo.png", width=110, height=110))
+    except:
+        elements.append(Paragraph("⚡ VNS TERMINATOR AI PRO", header))
+    elements.append(Spacer(1,10))
+    elements.append(Paragraph(f"VNS TERMINATOR AI PRO", header))
+    elements.append(Paragraph(f"{asset} • MARKET INTELLIGENCE REPORT • {datetime.now().strftime('%Y-%m-%d %H:%M')}", footer))
+    elements.append(Spacer(1,15))
 
-    # 3. PERFORMANCE & PARAMETERS TABLE
-    data = [
-        ["STRATEGIC PARAMETER", "VALUE / STATUS"],
-        ["CURRENT PRICE", f"${ls['Close']:.4f}"],
-        ["MARKET BIAS", "BULLISH (BUY) 🟢" if ls['Signal']==1 else "BEARISH (SELL) 🔴"],
-        ["TAKE PROFIT", f"${tp:.4f}"],
-        ["STOP LOSS", f"${sl:.4f}"]
+    # ---------------------
+    # Market Chart
+    # ---------------------
+    try:
+        img_bytes = pio.to_image(fig, format="png", width=1000, height=500)
+        elements.append(Image(BytesIO(img_bytes), width=480, height=240))
+    except:
+        elements.append(Paragraph("Chart unavailable in cloud environment.", body))
+    elements.append(Spacer(1,15))
+
+    # ---------------------
+    # Trade Parameters
+    # ---------------------
+    bias = "BULLISH 🟢" if ls["Signal"] == 1 else "BEARISH 🔴"
+    table_data = [
+        ["PARAMETER", "VALUE"],
+        ["Current Price", f"${ls['Close']:.4f}"],
+        ["Market Bias", bias],
+        ["Take Profit", f"${tp:.4f}"],
+        ["Stop Loss", f"${sl:.4f}"]
     ]
-    table = Table(data, colWidths=[200, 250])
+    table = Table(table_data, colWidths=[220,220])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#D4AF37")),
-        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
-        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+        ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#D4AF37")),
+        ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+        ("ALIGN",(0,0),(-1,-1),"CENTER"),
+        ("GRID",(0,0),(-1,-1),0.5,colors.grey)
     ]))
     elements.append(table)
+    elements.append(Spacer(1,15))
 
-    # 4. AI STRATEGIC ANALYSIS
-    elements.append(Paragraph("■ AI STRATEGIC ANALYSIS", style_section))
-    clean_ai = clean_markdown(ai_comment)
-    elements.append(Paragraph(clean_ai, style_body))
-    # --- SECTION 3: CIO STRATEGIC BRIEFING ---
-    elements.append(Spacer(1, 15))
-    elements.append(Paragraph("🏛️ CIO STRATEGIC BRIEFING", style_section))
-    elements.append(Spacer(1, 5))
-    elements.append(Paragraph(cio_report, style_body))
-    elements.append(Spacer(1, 10))
-        # 5. FOOTER & QR CODE
-    elements.append(Spacer(1, 15))
-    qr = qrcode.QRCode(version=1, box_size=10, border=1)
-    qr.add_data("https://t.me/your_vns_channel") # Soloy ny lien-nao
-    qr.make(fit=True)
-    qr_img = qr.make_image(fill_color="black", back_color="white")
-    
-    qr_buf = BytesIO()
-    qr_img.save(qr_buf, format='PNG')
-    qr_buf.seek(0)
-    
-    # Fametrahana QR eo ambany
-    elements.append(Image(qr_buf, width=50, height=50))
-    elements.append(Paragraph("VNS TERMINATOR AI PRO - Proprietary Trading System", style_footer))
+    # ---------------------
+    # Compute Metrics
+    # ---------------------
+    trades = np.array(trades)
+    winrate = round((trades > 0).mean()*100,2)
+    profit = trades[trades>0].sum()
+    loss = abs(trades[trades<0].sum())
+    profit_factor = round(profit/loss,2) if loss != 0 else 0
+    sharpe = round((trades.mean()/trades.std())*np.sqrt(252),2) if trades.std()!=0 else 0
+    equity = np.cumsum(trades)
+    max_drawdown = round((equity - np.maximum.accumulate(equity)).min(),2)
 
-    doc.build(elements)
-    buf.seek(0)
-    return buf
-    # 6. RISK DISCLAIMER (Legal Protection)
-    elements.append(Spacer(1, 15))
-    disclaimer_text = (
-        "<b>RISK DISCLAIMER:</b> Trading financial instruments involves significant risk and may not be suitable "
-        "for all investors. The analysis provided by VNS TERMINATOR AI is for educational purposes only and "
-        "does not constitute financial advice. Past performance is not indicative of future results."
-    )
-    style_disclaimer = ParagraphStyle(
-        name='Disclaimer', fontSize=7, textColor=colors.grey, 
-        leading=9, alignment=TA_LEFT, leftIndent=10, rightIndent=10
-    )
-    elements.append(Paragraph(disclaimer_text, style_disclaimer))
-
-    # 7. FOOTER & QR CODE
-    elements.append(Spacer(1, 10))
-    
-    # QR Code layout miaraka amin'ny soratra eo akaikiny
-    qr_data = [
-        [Image(qr_buf, width=45, height=45), 
-         Paragraph("<b>VNS TERMINATOR AI PRO</b><br/>Institutional Trading Systems<br/>© 2026 VNS Global Markets", style_footer)]
+    # ---------------------
+    # Performance Metrics Table
+    # ---------------------
+    metrics_data = [
+        ["Metric","Value"],
+        ["Win Rate", f"{winrate} %"],
+        ["Profit Factor", profit_factor],
+        ["Sharpe Ratio", sharpe],
+        ["Max Drawdown", max_drawdown]
     ]
-    qr_table = Table(qr_data, colWidths=[60, 400])
-    qr_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
-    elements.append(qr_table)
+    metrics_table = Table(metrics_data, colWidths=[220,220])
+    metrics_table.setStyle(TableStyle([
+        ("BACKGROUND",(0,0),(-1,0),colors.HexColor("#D4AF37")),
+        ("TEXTCOLOR",(0,0),(-1,0),colors.white),
+        ("ALIGN",(0,0),(-1,-1),"CENTER"),
+        ("GRID",(0,0),(-1,-1),0.5,colors.grey)
+    ]))
+    elements.append(Paragraph("SYSTEM PERFORMANCE METRICS", section))
+    elements.append(metrics_table)
+    elements.append(Spacer(1,15))
 
+    # ---------------------
+    # Equity Curve
+    # ---------------------
+    plt.figure()
+    plt.plot(equity)
+    plt.title("Strategy Equity Curve")
+    plt.tight_layout()
+    equity_buf = BytesIO()
+    plt.savefig(equity_buf, format="png")
+    equity_buf.seek(0)
+    elements.append(Paragraph("SYSTEM EQUITY CURVE", section))
+    elements.append(Image(equity_buf, width=420, height=200))
+    elements.append(Spacer(1,15))
+
+    # ---------------------
+    # AI Analysis
+    # ---------------------
+    elements.append(Paragraph("AI STRATEGIC ANALYSIS", section))
+    elements.append(Paragraph(ai_comment, body))
+    elements.append(Spacer(1,15))
+
+    # ---------------------
+    # Macro Calendar / Impact
+    # ---------------------
+    elements.append(Paragraph("MACRO EVENT IMPACT", section))
+    elements.append(Paragraph(ai_calendar, body))
+    elements.append(Spacer(1,15))
+
+    # ---------------------
+    # CIO Report
+    # ---------------------
+    elements.append(Paragraph("CIO INSTITUTIONAL BRIEFING", section))
+    elements.append(Paragraph(cio_report, body))
+    elements.append(Spacer(1,15))
+
+    # ---------------------
+    # Risk Disclaimer
+    # ---------------------
+    elements.append(Paragraph(
+        "<b>RISK DISCLAIMER:</b> Trading involves significant risk. "
+        "This report is for research purposes only and does not constitute investment advice.", disc_style
+    ))
+    elements.append(Spacer(1,10))
+
+    # ---------------------
+    # QR + Footer
+    # ---------------------
+    qr = qrcode.make("https://t.me/your_vns_channel")
+    qr_buf = BytesIO()
+    qr.save(qr_buf, format="PNG")
+    qr_buf.seek(0)
+    qr_table = Table([[Image(qr_buf,45,45), Paragraph("VNS TERMINATOR AI PRO\nInstitutional Trading Systems", footer)]],
+                     colWidths=[60,380])
+    elements.append(qr_table)
+    elements.append(Spacer(1,5))
+    elements.append(Paragraph("© 2026 VNS Global Markets", footer))
+
+    # ---------------------
     doc.build(elements)
     buf.seek(0)
     return buf
-    
+   
 # ==========================================
 # 1. UI CONFIG & STYLING
 # ==========================================
@@ -1154,7 +1215,7 @@ def main(limit=12):
                 # ------------------------------------------------
                 def get_ai_client():
                     try:
-                        api_key = st.secrets["GEMINI_API_KEY"]
+                        api_key = st.secrets["FOREX_GENAI_KEY"]
                         return genai.Client(api_key=api_key)
                     except:
                         return None
@@ -1208,7 +1269,7 @@ def main(limit=12):
                             try:
 
                                 res = client.models.generate_content(
-                                    model="gemini-2.5-flash",
+                                    model="gemini-1.5-flash",
                                     contents=prompt
                                 )
 
@@ -1476,4 +1537,3 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
-
