@@ -43,7 +43,7 @@ def get_atr(df, period=14):
 st.set_page_config(page_title="VNS TERMINATOR AI", layout="wide", page_icon="⚡")
 
 api_key = st.secrets["FOREX_GENAI_KEY"].strip()
-client = genai.Client(api_key=API_KEY)
+client = genai.Client(api_key=api_key)
 
 ASSET_MAP = {
     "GC=F": "GOLD", "CL=F": "CRUDE OIL", "EURUSD=X": "EUR / USD", "GBPUSD=X": "GBP / USD",
@@ -1473,3 +1473,4 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
+
