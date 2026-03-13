@@ -37,13 +37,21 @@ def get_atr(df, period=14):
     df['tr'] = df[['h-l', 'h-pc', 'l-pc']].max(axis=1)
     return df['tr'].rolling(window=period).mean().iloc[-1]
     
+import streamlit as st
+from google import genai # Hamarino raha ity tokoa ny library ampiasainao
+
 # ==============================
 # 1. CONFIG & ASSET MAP
 # ==============================
 st.set_page_config(page_title="VNS TERMINATOR AI", layout="wide", page_icon="⚡")
 
-api_key = st.secrets["FOREX_GENAI_KEY"].strip()
-client = genai.Client(api_key=api_key)
+# Fanalana ny Secret sy fisorohana ny fahadisoana (Key Management)
+try:
+    # Ampiasao ilay anarana ao amin'ny Secrets-nao (FOREX_GENAI_KEY)
+    MY_API_KEY = st.secrets["FOREX_GENAI_KEY"].strip()
+except KeyError:
+    st.error("⚠️ Tsy hita ao amin'ny Secrets ny 'FOREX_GENAI_KEY'")
+    st.stop()
 
 ASSET_MAP = {
     "GC=F": "GOLD", "CL=F": "CRUDE OIL", "EURUSD=X": "EUR / USD", "GBPUSD=X": "GBP / USD",
@@ -52,16 +60,16 @@ ASSET_MAP = {
     "EURJPY=X": "EUR / JPY", "GBPJPY=X": "GBP / JPY"
 }
 TIMEFRAMES = {"15m": ("7d", "15m"), "1H": ("60d", "1h"), "Daily": ("1y", "1d")}
-# --- Floating Action Button & Premium Styles ---
 
 # ==============================
 # 2. AI INTELLIGENCE & NEWS
 # ==============================
 def get_ai_client():
     try:
-        api_key = st.secrets["GEMINI_API_KEY"].strip()
+        # Ataovy azo antoka fa mitovy ny anarana eto sy ao amin'ny Secrets
+        api_key = st.secrets["FOREX_GENAI_KEY"].strip()
         if not api_key:
-            st.warning("⚠️ GEMINI_API_KEY missing in secrets")
+            st.warning("⚠️ API Key is empty")
             return None
         return genai.Client(api_key=api_key)
     except Exception as e:
@@ -72,7 +80,6 @@ def get_ai_client():
 # Deep AI Market Analysis
 # -------------------------------------------------
 def get_ai_deep_analysis(asset_label, current_price, df):
-
     # Maka ny data farany ho an'ny AI
     try:
         last_data = df.tail(15).to_string()
@@ -80,45 +87,41 @@ def get_ai_deep_analysis(asset_label, current_price, df):
         last_data = "No market dataframe available"
 
     prompt = f"""
-You are a professional hedge fund quantitative analyst.
+    You are a professional hedge fund quantitative analyst.
 
-Asset: {asset_label}
-Current Price: {current_price}
+    Asset: {asset_label}
+    Current Price: {current_price}
 
-Recent Market Data:
-{last_data}
+    Recent Market Data:
+    {last_data}
 
-Provide a concise institutional-style analysis including:
+    Provide a concise institutional-style analysis including:
+    1. Market Bias (Bullish / Bearish / Neutral)
+    2. Key Support Levels
+    3. Key Resistance Levels
+    4. Suggested Entry Zone
+    5. Stop Loss
+    6. Take Profit targets
+    7. Short explanation of market structure
 
-1. Market Bias (Bullish / Bearish / Neutral)
-2. Key Support Levels
-3. Key Resistance Levels
-4. Suggested Entry Zone
-5. Stop Loss
-6. Take Profit targets
-7. Short explanation of market structure
-
-Respond in clear trading format.
-"""
+    Respond in clear trading format.
+    """
 
     try:
-
         client = get_ai_client()
-
         if client is None:
-            return "⚠️ AI system unavailable (API key missing)."
+            return "⚠️ AI system unavailable (API key issue)."
 
+        # Hamarino raha mbola 'gemini-2.5-flash' no iantsoana ny model-nao
+        # (Ohatra: 'gemini-2.5-flash' matetika no ampiasaina izao)
         res = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-2.5-flash", 
             contents=prompt
         )
-
         return res.text
 
     except Exception as e:
-        return f"AI Error: {str(e)}"
-    
-
+        return f"AI Error: {str(e)}
 # -------------------------------------------------
 # Live Market News
 # -------------------------------------------------
@@ -1473,4 +1476,3 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
-
