@@ -1,4 +1,13 @@
 import streamlit as st
+
+# Initialize trade history
+if "trades" not in st.session_state:
+    st.session_state.trades = []
+
+# Initialize pdf container
+if "ready_pdf" not in st.session_state:
+    st.session_state.ready_pdf = None
+
 import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
@@ -28,6 +37,7 @@ from datetime import datetime
 import math
 import requests
 import json
+
 
     
 def get_atr(df, period=14):
@@ -1442,29 +1452,42 @@ def main(limit=12):
             if not report_data:
                 st.warning("⚠️ Please run AI Analysis first to generate a report.")
             else:
-                # PREPARE PDF BUTTON
-                if st.button("📄 PREPARE OFFICIAL REPORT", use_container_width=True):
-                    with st.spinner("Generating professional PDF report..."):
-                        try:
-                            ai_cal = st.session_state.get("news", "N/A: No economic data streamed.")
 
-                            # Soloina export_pro_pdf -> export_ultra_premium_pdf
+                if st.button("📄 PREPARE OFFICIAL REPORT", use_container_width=True):
+
+                    with st.spinner("Generating professional PDF report..."):
+
+                        try:
+
+                            ai_cal = st.session_state.get(
+                                "news",
+                                "N/A: No economic data streamed."
+                            )
+
+                            trades = st.session_state.get("trades", [])
+
                             pdf_bytes = export_ultra_premium_pdf(
-                                ASSET_MAP[ticker], 
-                                ls, tp, sl, 
-                                report_data, 
-                                ai_cal, fig, 
+                                ASSET_MAP[ticker],
+                                ls,
+                                tp,
+                                sl,
+                                report_data,
+                                ai_cal,
+                                fig,
                                 f"Institutional Briefing: {ticker}",
-                                trades  # aza adino ny lisitry ny trades raha mila metrics
+                                trades
                             )
 
                             st.session_state.ready_pdf = pdf_bytes
+
                             st.success("✅ Report Ready for Download!")
+
                         except Exception as e:
                             st.error(f"Error inside PDF generator: {e}")
 
-                # DOWNLOAD BUTTON
-                if "ready_pdf" in st.session_state:
+
+                if st.session_state.ready_pdf:
+
                     st.download_button(
                         label="⬇️ CLICK HERE TO SAVE PDF",
                         data=st.session_state.ready_pdf,
@@ -1542,5 +1565,4 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
-
 
