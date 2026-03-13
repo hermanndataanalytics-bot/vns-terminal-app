@@ -120,75 +120,61 @@ def get_ai_deep_analysis(asset_label, current_price, df):
             return call_groq_fallback(prompt)
 			
 # -------------------------------------------------
-# Live Market News
+# Live Market News (With Quota Protection)
 # -------------------------------------------------
 def get_live_news(asset):
-
+    from datetime import datetime
     today = datetime.now().date()
 
     prompt = f"""
-You are a financial news terminal similar to Bloomberg.
+    You are a financial news terminal similar to Bloomberg.
+    Provide the 3 latest high-impact market news headlines
+    relevant to {asset} as of {today}.
 
-Provide the 3 latest high-impact market news headlines
-relevant to {asset} as of {today}.
+    Rules:
+    - Only short headlines
+    - Focus on macro, crypto, forex or institutional news
+    - Maximum 1 line per headline
+    """
 
-Rules:
-- Only short headlines
-- Focus on macro, crypto, forex or institutional news
-- Maximum 1 line per headline
-"""
+    client = get_ai_client()
+    if client is None:
+        return "⚠️ AI news service unavailable."
 
+    # --- DINGANA 1: ANDRAMANA NY GEMINI 2.5 FLASH ---
     try:
-
-        client = get_ai_client()
-
-        if client is None:
-            return "⚠️ AI news service unavailable."
-
         res = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="models/gemini-2.5-flash",
             contents=prompt
         )
-
         return res.text
 
     except Exception as e:
-        return f"News unavailable. ({str(e)})"
+        # Raha lany ny quota (Error 429) na misy olana hafa
+        error_msg = str(e).upper()
         
-# ==============================
-# 3. PDF EXPORT (LOGO + QR)
-# ==============================
-def clean_markdown(text):
-    """
-    Manala ny marika Markdown (###, **) mba ho milamina ny fisehon'ny soratra ao amin'ny PDF.
-    """
-    if not text:
-        return ""
-    # 1. Manova ny ### Lohateny ho Bold (HTML style ho an'ny ReportLab)
-    text = re.sub(r'#+\s*(.*)', r'<b>\1</b>', text)
-    # 2. Manova ny **soratra** ho <b>soratra</b>
-    text = re.sub(r'\*\*(.*?)\*\*', r'<b><font color="#1F4E79">\1</font></b>', text)
-    # 3. Manala ny kintana tokana sisa *
-    text = text.replace('*', '')
-    # 4. Manolo ny newline \n ho <br/> mba hisian'ny fidirana andalana ao amin'ny PDF
-    text = text.replace('\n', '<br/>')
-    return text
-def init_session_state():
-    defaults = {
-        "cio_report_text": "",
-        "ai_comment": "",
-        "ai_calendar": "",
-        "trade_data": None,
-    }
-
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
-
-init_session_state()
-    
-def export_ultra_premium_pdf(asset, ls, tp, sl, ai_comment, ai_calendar,
-                             fig, cio_report, trades):
+        if "429" in error_msg or "QUOTA" in error_msg or "EXHAUSTED" in error_msg:
+            # --- DINGANA 2: FALLBACK ANY AMIN'NY GEMMA 3 27B (Google Quota malalaka) ---
+            try:
+                # Mampiasa an'ilay anarana modely hita tao amin'ny "Model Lister"-nao
+                res_backup = client.models.generate_content(
+                    model="models/gemma-3-27b-it",
+                    contents=prompt
+                )
+                return f"🟡 **[Gemma 3 News]**\n{res_backup.text}"
+            
+            except Exception:
+                # --- DINGANA 3: FALLBACK ANY AMIN'NY GROQ (Emergency Backup) ---
+                try:
+                    # Miantso an'ilay function Groq (Llama 3.3) efa namboarintsika teo
+                    return f"🔵 **[Groq News]**\n{call_groq_fallback(prompt)}"
+                except:
+                    return f"⚠️ News unavailable (All AI Quotas Exhausted)."
+        
+        return f"News unavailable. ({str(e)})"
+		
+def export_ultra_premium_pdf_safe(asset, ls, tp, sl, ai_comment, ai_calendar,
+                                  fig, cio_report, trades):
 
     import numpy as np
     from io import BytesIO
@@ -196,24 +182,29 @@ def export_ultra_premium_pdf(asset, ls, tp, sl, ai_comment, ai_calendar,
     import matplotlib.pyplot as plt
     import plotly.io as pio
     import qrcode
-
-    from reportlab.platypus import (
-        SimpleDocTemplate, Paragraph, Spacer,
-        Image, Table, TableStyle
-    )
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
     from reportlab.lib.pagesizes import letter
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib import colors
     from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    import re
+
+    # Helper to clean markdown
+    def clean_markdown(text):
+        if not text:
+            return ""
+        text = re.sub(r'#+\s*(.*)', r'<b>\1</b>', text)
+        text = re.sub(r'\*\*(.*?)\*\*', r'<b><font color="#1F4E79">\1</font></b>', text)
+        text = text.replace('*','').replace('\n','<br/>')
+        return text
 
     buf = BytesIO()
-    doc = SimpleDocTemplate(buf, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    doc = SimpleDocTemplate(buf, pagesize=letter,
+                            rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
     elements = []
     styles = getSampleStyleSheet()
 
-    # ---------------------
-    # Styles
-    # ---------------------
+    # --------------------- Styles ---------------------
     header = ParagraphStyle("header", parent=styles["Heading1"], fontSize=22,
                             alignment=TA_CENTER, textColor=colors.HexColor("#D4AF37"))
     section = ParagraphStyle("section", parent=styles["Heading2"], fontSize=13, textColor=colors.HexColor("#D4AF37"))
@@ -221,35 +212,49 @@ def export_ultra_premium_pdf(asset, ls, tp, sl, ai_comment, ai_calendar,
     footer = ParagraphStyle("footer", fontSize=8, alignment=TA_CENTER, textColor=colors.grey)
     disc_style = ParagraphStyle("disc", fontSize=7, textColor=colors.grey, alignment=TA_LEFT)
 
-    # ---------------------
-    # Logo + Cover
-    # ---------------------
+    # --------------------- Logo & Cover ---------------------
     try:
         elements.append(Image("vns_logo.png", width=110, height=110))
     except:
         elements.append(Paragraph("⚡ VNS TERMINATOR AI PRO", header))
     elements.append(Spacer(1,10))
-    elements.append(Paragraph(f"VNS TERMINATOR AI PRO", header))
+    elements.append(Paragraph("VNS TERMINATOR AI PRO", header))
     elements.append(Paragraph(f"{asset} • MARKET INTELLIGENCE REPORT • {datetime.now().strftime('%Y-%m-%d %H:%M')}", footer))
     elements.append(Spacer(1,15))
 
-    # ---------------------
-    # Market Chart
-    # ---------------------
+    # --------------------- Market Chart (Safe) ---------------------
+    chart_added = False
     try:
+        # Try Plotly first
         img_bytes = pio.to_image(fig, format="png", width=1000, height=500)
         elements.append(Image(BytesIO(img_bytes), width=480, height=240))
+        chart_added = True
     except:
-        elements.append(Paragraph("Chart unavailable in cloud environment.", body))
+        # Fallback to matplotlib from Close prices
+        try:
+            plt.figure(figsize=(6,3))
+            plt.plot(ls['Close'], color='blue')
+            plt.title(f"{asset} Price Chart")
+            plt.grid(True)
+            buf_chart = BytesIO()
+            plt.tight_layout()
+            plt.savefig(buf_chart, format='png')
+            plt.close()
+            buf_chart.seek(0)
+            elements.append(Image(buf_chart, width=480, height=240))
+            chart_added = True
+        except:
+            pass
+    if not chart_added:
+        elements.append(Paragraph("Chart unavailable.", body))
+
     elements.append(Spacer(1,15))
 
-    # ---------------------
-    # Trade Parameters
-    # ---------------------
-    bias = "BULLISH 🟢" if ls["Signal"] == 1 else "BEARISH 🔴"
+    # --------------------- Trade Parameters ---------------------
+    bias = "BULLISH 🟢" if ls.get("Signal",0) == 1 else "BEARISH 🔴"
     table_data = [
         ["PARAMETER", "VALUE"],
-        ["Current Price", f"${ls['Close']:.4f}"],
+        ["Current Price", f"${ls.get('Close',0):.4f}"],
         ["Market Bias", bias],
         ["Take Profit", f"${tp:.4f}"],
         ["Stop Loss", f"${sl:.4f}"]
@@ -264,36 +269,23 @@ def export_ultra_premium_pdf(asset, ls, tp, sl, ai_comment, ai_calendar,
     elements.append(table)
     elements.append(Spacer(1,15))
 
-    # ---------------------
-    # Compute Metrics (VOAHITSY)
-    # ---------------------
+    # --------------------- Performance Metrics ---------------------
+    if trades is None:
+        trades = []
     trades = np.array(trades)
-    
-    # Jerena raha misy trade farafahakeliny iray vao manao kajy
     if trades.size > 0:
-        winrate = round((trades > 0).mean() * 100, 2)
-        profit = trades[trades > 0].sum()
-        loss = abs(trades[trades < 0].sum())
-        profit_factor = round(profit / loss, 2) if loss != 0 else 0
-        
-        # Fisorohana ny division by zero raha tsy miova ny trades
+        winrate = round((trades>0).mean()*100,2)
+        profit = trades[trades>0].sum()
+        loss = abs(trades[trades<0].sum())
+        profit_factor = round(profit/loss,2) if loss!=0 else 0
         std_val = trades.std()
-        sharpe = round((trades.mean() / std_val) * np.sqrt(252), 2) if std_val != 0 else 0
-        
+        sharpe = round((trades.mean()/std_val)*np.sqrt(252),2) if std_val!=0 else 0
         equity = np.cumsum(trades)
-        # Eto ilay erreur teo: np.maximum.accumulate dia mila array tsy foana
-        max_drawdown = round((equity - np.maximum.accumulate(equity)).min(), 2)
+        max_drawdown = round((equity - np.maximum.accumulate(equity)).min(),2)
     else:
-        # Sanda default raha mbola tsy nisy trades
-        winrate = 0.0
-        profit_factor = 0.0
-        sharpe = 0.0
-        max_drawdown = 0.0
+        winrate = profit_factor = sharpe = max_drawdown = 0
         equity = np.array([0])
-		
-    # ---------------------
-    # Performance Metrics Table
-    # ---------------------
+
     metrics_data = [
         ["Metric","Value"],
         ["Win Rate", f"{winrate} %"],
@@ -312,64 +304,52 @@ def export_ultra_premium_pdf(asset, ls, tp, sl, ai_comment, ai_calendar,
     elements.append(metrics_table)
     elements.append(Spacer(1,15))
 
-    # ---------------------
-    # Equity Curve
-    # ---------------------
-    plt.figure()
-    plt.plot(equity)
+    # --------------------- Equity Curve ---------------------
+    plt.figure(figsize=(6,3))
+    plt.plot(equity, color='green')
     plt.title("Strategy Equity Curve")
     plt.tight_layout()
-    equity_buf = BytesIO()
-    plt.savefig(equity_buf, format="png")
-    equity_buf.seek(0)
+    buf_equity = BytesIO()
+    plt.savefig(buf_equity, format='png')
+    plt.close()
+    buf_equity.seek(0)
     elements.append(Paragraph("SYSTEM EQUITY CURVE", section))
-    elements.append(Image(equity_buf, width=420, height=200))
+    elements.append(Image(buf_equity, width=420, height=200))
     elements.append(Spacer(1,15))
 
-    # ---------------------
-    # AI Analysis
-    # ---------------------
+    # --------------------- AI Analysis ---------------------
     elements.append(Paragraph("AI STRATEGIC ANALYSIS", section))
-    elements.append(Paragraph(ai_comment, body))
+    elements.append(Paragraph(clean_markdown(ai_comment), body))
     elements.append(Spacer(1,15))
 
-    # ---------------------
-    # Macro Calendar / Impact
-    # ---------------------
+    # --------------------- Macro / CIO ---------------------
     elements.append(Paragraph("MACRO EVENT IMPACT", section))
-    elements.append(Paragraph(ai_calendar, body))
+    elements.append(Paragraph(clean_markdown(ai_calendar), body))
     elements.append(Spacer(1,15))
 
-    # ---------------------
-    # CIO Report
-    # ---------------------
     elements.append(Paragraph("CIO INSTITUTIONAL BRIEFING", section))
-    elements.append(Paragraph(cio_report, body))
+    elements.append(Paragraph(clean_markdown(cio_report), body))
     elements.append(Spacer(1,15))
 
-    # ---------------------
-    # Risk Disclaimer
-    # ---------------------
+    # --------------------- Disclaimer ---------------------
     elements.append(Paragraph(
-        "<b>RISK DISCLAIMER:</b> Trading involves significant risk. "
-        "This report is for research purposes only and does not constitute investment advice.", disc_style
+        "<b>RISK DISCLAIMER:</b> Trading involves significant risk. This report is for research purposes only and does not constitute investment advice.",
+        disc_style
     ))
     elements.append(Spacer(1,10))
 
-    # ---------------------
-    # QR + Footer
-    # ---------------------
+    # --------------------- QR Code ---------------------
     qr = qrcode.make("https://t.me/your_vns_channel")
     qr_buf = BytesIO()
-    qr.save(qr_buf, format="PNG")
+    qr.save(qr_buf, format='PNG')
     qr_buf.seek(0)
-    qr_table = Table([[Image(qr_buf,45,45), Paragraph("VNS TERMINATOR AI PRO\nInstitutional Trading Systems", footer)]],
+    qr_table = Table([[Image(qr_buf,45,45), Paragraph("VNS TERMINATOR AI PRO<br/>Institutional Trading Systems", footer)]],
                      colWidths=[60,380])
     elements.append(qr_table)
     elements.append(Spacer(1,5))
     elements.append(Paragraph("© 2026 VNS Global Markets", footer))
 
-    # ---------------------
+    # --------------------- Build ---------------------
     doc.build(elements)
     buf.seek(0)
     return buf
@@ -1222,71 +1202,79 @@ def main(limit=12):
                 with st.expander("📊 DETAILED STRATEGY REPORT", expanded=True):
                     st.markdown(st.session_state.ai_comment)
                     
-                # ------------------------------------------------
-                # GEMINI CLIENT
-                # ------------------------------------------------
-                def get_ai_client():
-                    try:
-                        api_key = st.secrets["FOREX_GENAI_KEY"]
-                        return genai.Client(api_key=api_key)
-                    except:
-                        return None
-
-
                 # ==========================================
-                # 6. GEMINI CIO BRIEFING
-                # ==========================================
-                st.markdown("---")
-                st.subheader("🧠 Institutional AI Intelligence")
+				# 6. GEMINI CIO BRIEFING (WITH TRIPLE FALLBACK)
+				# ==========================================
+				st.markdown("---")
+				st.subheader("🧠 Institutional AI Intelligence")
 
-                if st.button(
-                    "🤖 GENERATE CIO BRIEFING",
-                    use_container_width=True,
-                    key="btn_cio_gemini"
-                ):
+				# Function kely hitantana ny fampitahana modely (Routing)
+				def get_cio_briefing_logic(prompt):
+					client = get_ai_client()
+					if client is None:
+						return "⚠️ AI system unavailable. API key missing."
 
-                    client = get_ai_client()
+					# --- 1. GEMINI 2.5 FLASH (Primary) ---
+					try:
+						res = client.models.generate_content(
+							model="models/gemini-2.5-flash",
+							contents=prompt
+						)
+						return f"🟢 **[Gemini 2.5 Flash]**\n\n{res.text}"
+					
+					except Exception as e:
+						error_msg = str(e).upper()
+						# Raha lany quota (429) vao mifindra
+						if "429" in error_msg or "QUOTA" in error_msg or "EXHAUSTED" in error_msg:
+							
+							# --- 2. GEMMA 3 27B (Backup 1) ---
+							try:
+								st.info("🔄 Gemini quota reached. Switching to Gemma 3 27B...")
+								res_backup = client.models.generate_content(
+									model="models/gemma-3-27b-it",
+									contents=prompt
+								)
+								return f"🟡 **[Gemma 3 27B]**\n\n{res_backup.text}"
+							
+							except Exception:
+								# --- 3. GROQ LLAMA 3.3 (Backup 2 - Emergency) ---
+								try:
+									st.warning("🔄 Using Groq Llama 3.3 (Emergency Backup)...")
+									# Miantso an'ilay function Groq efa namboarintsika
+									return f"🔵 **[Groq Llama 3.3]**\n\n{call_groq_fallback(prompt)}"
+								except:
+									return "❌ All AI models exhausted. Please wait 60s."
+						
+						return f"⚠️ AI Error: {str(e)}"
 
-                    if client is None:
-                        st.error("AI system unavailable. API key missing.")
-                    else:
+				# Ny bokotra eo amin'ny UI
+				if st.button(
+					"🤖 GENERATE CIO BRIEFING",
+					use_container_width=True,
+					key="btn_cio_gemini"
+				):
+					with st.spinner("CIO is reviewing trade parameters..."):
+						# Fanomanana ny Prompt
+						prompt = f"""
+						Act as a Chief Investment Officer (CIO) of a hedge fund.
+						Analyze this Forex / Gold trade:
+						Asset: {ticker_name}
+						Current Price: {current_price}
+						ATR Volatility: {atr:.5f}
+						Risk per Trade: {risk_pct_input*100:.2f}%
+						Recommended Lot Size: {st.session_state.get("calculated_lot",0)}
+						Stop Loss: {sl_pips:.1f} pips
+						Take Profit: {tp_pips:.1f} pips (Risk Reward 1:2)
 
-                        with st.spinner("Gemini Flash is analyzing market structure..."):
-
-                            prompt = f"""
-                Act as a Chief Investment Officer (CIO) of a hedge fund.
-
-                Analyze this Forex / Gold trade:
-
-                Asset: {ticker_name}
-                Current Price: {current_price}
-                ATR Volatility: {atr:.5f}
-                Risk per Trade: {risk_pct_input*100:.2f}%
-                Recommended Lot Size: {st.session_state.get("calculated_lot",0)}
-                Stop Loss: {sl_pips:.1f} pips
-                Take Profit: {tp_pips:.1f} pips (Risk Reward 1:2)
-
-                Provide a concise institutional briefing (maximum 3 sentences).
-
-                Focus on:
-                • Risk quality
-                • Whether ATR supports the stop loss
-                • Institutional trade viability
-
-                End the response with:
-                [SCORE: XX]
-                Where XX is a confidence score between 0 and 100.
-                """
-
-                            try:
-
-                                res = client.models.generate_content(
-                                    model="gemini-2.5-flash",
-                                    contents=prompt
-                                )
-
-                                full_text = res.text
-
+						Provide a concise institutional briefing (maximum 3 sentences).
+						Focus on: Risk quality, ATR support, and viability.
+						End with: [SCORE: XX] (0-100)
+						"""
+						
+						# Fiantsoana ny rafitra Fallback
+						result_text = get_cio_briefing_logic(prompt)
+						st.markdown(result_text)
+		
                                 # --------------------------------
                                 # Extract AI score
                                 # --------------------------------
