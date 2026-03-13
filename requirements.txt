@@ -20,3 +20,4 @@ oauth2client
 streamlit-autorefresh
 openai
 kaleido
+groq
