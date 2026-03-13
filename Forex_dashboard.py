@@ -118,7 +118,7 @@ def get_ai_deep_analysis(asset_label, current_price, df):
             st.warning(f"🔄 Google API limit reached. Switching to Groq...")
             # Miantso an'ilay function call_groq_fallback efa nataontsika teo
             return call_groq_fallback(prompt)
-			
+            
 # -------------------------------------------------
 # Live Market News (With Quota Protection)
 # -------------------------------------------------
@@ -172,7 +172,7 @@ def get_live_news(asset):
                     return f"⚠️ News unavailable (All AI Quotas Exhausted)."
         
         return f"News unavailable. ({str(e)})"
-		
+        
 def export_ultra_premium_pdf_safe(asset, ls, tp, sl, ai_comment, ai_calendar,
                                   fig, cio_report, trades):
 
@@ -1203,171 +1203,151 @@ def main(limit=12):
                     st.markdown(st.session_state.ai_comment)
                     
                 # ==========================================
-				# 6. GEMINI CIO BRIEFING (WITH TRIPLE FALLBACK)
-				# ==========================================
-				st.markdown("---")
-				st.subheader("🧠 Institutional AI Intelligence")
+                # 6. GEMINI CIO BRIEFING (WITH TRIPLE FALLBACK)
+                # ==========================================
+                st.markdown("---")
+                st.subheader("🧠 Institutional AI Intelligence")
 
-				# Function kely hitantana ny fampitahana modely (Routing)
-				def get_cio_briefing_logic(prompt):
-					client = get_ai_client()
-					if client is None:
-						return "⚠️ AI system unavailable. API key missing."
+                # Function kely hitantana ny fampitahana modely (Routing)
+                def get_cio_briefing_logic(prompt):
+                    client = get_ai_client()
+                    if client is None:
+                        return "⚠️ AI system unavailable. API key missing."
 
-					# --- 1. GEMINI 2.5 FLASH (Primary) ---
-					try:
-						res = client.models.generate_content(
-							model="models/gemini-2.5-flash",
-							contents=prompt
-						)
-						return f"🟢 **[Gemini 2.5 Flash]**\n\n{res.text}"
-					
-					except Exception as e:
-						error_msg = str(e).upper()
-						# Raha lany quota (429) vao mifindra
-						if "429" in error_msg or "QUOTA" in error_msg or "EXHAUSTED" in error_msg:
-							
-							# --- 2. GEMMA 3 27B (Backup 1) ---
-							try:
-								st.info("🔄 Gemini quota reached. Switching to Gemma 3 27B...")
-								res_backup = client.models.generate_content(
-									model="models/gemma-3-27b-it",
-									contents=prompt
-								)
-								return f"🟡 **[Gemma 3 27B]**\n\n{res_backup.text}"
-							
-							except Exception:
-								# --- 3. GROQ LLAMA 3.3 (Backup 2 - Emergency) ---
-								try:
-									st.warning("🔄 Using Groq Llama 3.3 (Emergency Backup)...")
-									# Miantso an'ilay function Groq efa namboarintsika
-									return f"🔵 **[Groq Llama 3.3]**\n\n{call_groq_fallback(prompt)}"
-								except:
-									return "❌ All AI models exhausted. Please wait 60s."
-						
-						return f"⚠️ AI Error: {str(e)}"
+                    # --- 1. GEMINI 2.5 FLASH (Primary) ---
+                    try:
+                        res = client.models.generate_content(
+                            model="models/gemini-2.5-flash",
+                            contents=prompt
+                        )
+                        return f"🟢 **[Gemini 2.5 Flash]**\n\n{res.text}"
+                    
+                    except Exception as e:
+                        error_msg = str(e).upper()
+                        # Raha lany quota (429) vao mifindra
+                        if "429" in error_msg or "QUOTA" in error_msg or "EXHAUSTED" in error_msg:
+                            
+                            # --- 2. GEMMA 3 27B (Backup 1) ---
+                            try:
+                                st.info("🔄 Gemini quota reached. Switching to Gemma 3 27B...")
+                                res_backup = client.models.generate_content(
+                                    model="models/gemma-3-27b-it",
+                                    contents=prompt
+                                )
+                                return f"🟡 **[Gemma 3 27B]**\n\n{res_backup.text}"
+                            
+                            except Exception:
+                                # --- 3. GROQ LLAMA 3.3 (Backup 2 - Emergency) ---
+                                try:
+                                    st.warning("🔄 Using Groq Llama 3.3 (Emergency Backup)...")
+                                    # Miantso an'ilay function Groq efa namboarintsika
+                                    return f"🔵 **[Groq Llama 3.3]**\n\n{call_groq_fallback(prompt)}"
+                                except:
+                                    return "❌ All AI models exhausted. Please wait 60s."
+                        
+                        return f"⚠️ AI Error: {str(e)}"
 
-				# Ny bokotra eo amin'ny UI
-				if st.button(
-					"🤖 GENERATE CIO BRIEFING",
-					use_container_width=True,
-					key="btn_cio_gemini"
-				):
-					with st.spinner("CIO is reviewing trade parameters..."):
-						# Fanomanana ny Prompt
-						prompt = f"""
-						Act as a Chief Investment Officer (CIO) of a hedge fund.
-						Analyze this Forex / Gold trade:
-						Asset: {ticker_name}
-						Current Price: {current_price}
-						ATR Volatility: {atr:.5f}
-						Risk per Trade: {risk_pct_input*100:.2f}%
-						Recommended Lot Size: {st.session_state.get("calculated_lot",0)}
-						Stop Loss: {sl_pips:.1f} pips
-						Take Profit: {tp_pips:.1f} pips (Risk Reward 1:2)
+                if st.button(
+                    "🤖 GENERATE CIO BRIEFING",
+                    use_container_width=True,
+                    key="btn_cio_gemini"
+                ):
+                    with st.spinner("CIO is reviewing trade parameters..."):
+                        try:
+                            # Fanomanana ny Prompt
+                            prompt = f"""
+                            Act as a Chief Investment Officer (CIO) of a hedge fund.
+                            Analyze this Forex / Gold trade:
+                            Asset: {ticker_name}
+                            Current Price: {current_price}
+                            ATR Volatility: {atr:.5f}
+                            Risk per Trade: {risk_pct_input*100:.2f}%
+                            Recommended Lot Size: {st.session_state.get("calculated_lot",0)}
+                            Stop Loss: {sl_pips:.1f} pips
+                            Take Profit: {tp_pips:.1f} pips (Risk Reward 1:2)
 
-						Provide a concise institutional briefing (maximum 3 sentences).
-						Focus on: Risk quality, ATR support, and viability.
-						End with: [SCORE: XX] (0-100)
-						"""
-						
-						# Fiantsoana ny rafitra Fallback
-						result_text = get_cio_briefing_logic(prompt)
-						st.markdown(result_text)
-		
-                                # --------------------------------
-                                # Extract AI score
-                                # --------------------------------
-                                match = re.search(r"\[SCORE:\s*(\d+)\]", full_text)
+                            Provide a concise institutional briefing (maximum 3 sentences).
+                            Focus on: Risk quality, ATR support, and viability.
+                            End with: [SCORE: XX] (0-100)
+                            """
 
-                                score = int(match.group(1)) if match else 50
+                            # Fiantsoana ny rafitra Fallback
+                            result_text = get_cio_briefing_logic(prompt)
+                            st.markdown(result_text)
 
-                                st.session_state.trade_score = score
+                            # --------------------------
+                            # Extract AI score
+                            # --------------------------
+                            import re
+                            match = re.search(r"\[SCORE:\s*(\d+)\]", result_text)
+                            score = int(match.group(1)) if match else 50
+                            st.session_state.trade_score = score
 
-                                clean_text = re.sub(
-                                    r"\[SCORE:\s*\d+\]",
-                                    "",
-                                    full_text
-                                ).strip()
+                            clean_text = re.sub(r"\[SCORE:\s*\d+\]", "", result_text).strip()
 
-                                # =====================================
-                                # CIO STRATEGIC BRIEF
-                                # =====================================
-                                left, right = st.columns([2,1])
+                            # --------------------------
+                            # CIO STRATEGIC BRIEF
+                            # --------------------------
+                            left, right = st.columns([2,1])
+                            with left:
+                                st.info(f"**CIO Strategic Briefing:**\n\n{clean_text}")
 
-                                with left:
-
-                                    st.info(
-                                        f"**CIO Strategic Briefing:**\n\n{clean_text}"
-                                    )
-
-                                with right:
-
-                                    st.metric("AI Score", f"{score}%")
-                                    st.progress(score/100)
-
-                                    if score >= 75:
-                                        st.success("HIGH CONVICTION")
-                                    elif score >= 40:
-                                        st.warning("TACTICAL ENTRY")
-                                    else:
-                                        st.error("HIGH RISK / AVOID")
-
-                                # =====================================
-                                # AI CONFIDENCE GAUGE
-                                # =====================================
-                                st.markdown("---")
-                                st.markdown("### 🧠 AI Confidence Gauge")
-
-                                g1, g2 = st.columns([1,3])
-
-                                with g1:
-                                    st.metric("Confidence", f"{score}%")
-
-                                with g2:
-                                    st.progress(score/100)
-
-                                # =====================================
-                                # TRADE PROBABILITY PANEL
-                                # =====================================
-                                st.markdown("### 📊 Trade Probability")
-
-                                win_probability = min(95, max(10, score))
-
-                                if score >= 70:
-                                    regime = "Trending Market"
-                                    risk_quality = "Low Risk"
+                            with right:
+                                st.metric("AI Score", f"{score}%")
+                                st.progress(score/100)
+                                if score >= 75:
+                                    st.success("HIGH CONVICTION")
                                 elif score >= 40:
-                                    regime = "Mixed Market"
-                                    risk_quality = "Moderate Risk"
+                                    st.warning("TACTICAL ENTRY")
                                 else:
-                                    regime = "Unstable Market"
-                                    risk_quality = "High Risk"
+                                    st.error("HIGH RISK / AVOID")
 
-                                c1, c2, c3 = st.columns(3)
+                            # --------------------------
+                            # AI Confidence Gauge
+                            # --------------------------
+                            st.markdown("---")
+                            st.markdown("### 🧠 AI Confidence Gauge")
+                            g1, g2 = st.columns([1,3])
+                            with g1:
+                                st.metric("Confidence", f"{score}%")
+                            with g2:
+                                st.progress(score/100)
 
-                                c1.metric("Win Probability", f"{win_probability}%")
-                                c2.metric("Market Regime", regime)
-                                c3.metric("Risk Quality", risk_quality)
+                            # --------------------------
+                            # Trade Probability Panel
+                            # --------------------------
+                            st.markdown("### 📊 Trade Probability")
+                            win_probability = min(95, max(10, score))
+                            if score >= 70:
+                                regime = "Trending Market"
+                                risk_quality = "Low Risk"
+                            elif score >= 40:
+                                regime = "Mixed Market"
+                                risk_quality = "Moderate Risk"
+                            else:
+                                regime = "Unstable Market"
+                                risk_quality = "High Risk"
 
-                                # =====================================
-                                # INSTITUTIONAL RISK METER
-                                # =====================================
-                                st.markdown("### 🏦 Institutional Risk Meter")
+                            c1, c2, c3 = st.columns(3)
+                            c1.metric("Win Probability", f"{win_probability}%")
+                            c2.metric("Market Regime", regime)
+                            c3.metric("Risk Quality", risk_quality)
 
-                                risk_level = 100 - score
+                            # --------------------------
+                            # Institutional Risk Meter
+                            # --------------------------
+                            st.markdown("### 🏦 Institutional Risk Meter")
+                            risk_level = 100 - score
+                            st.progress(risk_level/100)
+                            if risk_level <= 25:
+                                st.success("Risk Level: LOW")
+                            elif risk_level <= 60:
+                                st.warning("Risk Level: MODERATE")
+                            else:
+                                st.error("Risk Level: HIGH")
 
-                                st.progress(risk_level/100)
-
-                                if risk_level <= 25:
-                                    st.success("Risk Level: LOW")
-                                elif risk_level <= 60:
-                                    st.warning("Risk Level: MODERATE")
-                                else:
-                                    st.error("Risk Level: HIGH")
-
-                            except Exception as e:
-                                st.error(f"AI Offline: {e}")
+                        except Exception as e:
+                            st.error(f"AI Offline: {e}")
 
 
                 # ==========================================
@@ -1554,3 +1534,4 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
+
