@@ -99,35 +99,46 @@ def send_signal_to_vns_sheets(data_list):
         return False
 
 # ======================================================
-# 5. AI FUNCTIONS
+# 5. AI FUNCTIONS (secure API key)
 # ======================================================
-def ai_explain(trade, score):
-    # Fanitsiana ny fomba fakana ny key
+
+def get_ai_client():
+    """Create Gemini client from Streamlit secrets"""
     try:
-        key = "AIzaSyCzo49qIOoADBq55SdTLltg-0vqnipWl4w"
+        api_key = st.secrets["GEMINI_API_KEY"].strip()
+        if not api_key:
+            return None
+        return genai.Client(api_key=api_key)
     except Exception:
-        return "Gemini API Key missing in secrets.toml"
-        
+        return None
+
+def ai_explain(trade, score):
+    client = get_ai_client()
+    if client is None:
+        return "⚠️ Gemini API Key missing in secrets.toml"
+
     prompt = f"""
-    You are a professional Crypto Quant Analyst.
-    Asset: {trade.get('asset')}
-    Price: {trade.get('price')}
-    Bias: {trade.get('bias')}
-    Stop Loss: {trade.get('SL')}
-    Take Profit: {trade.get('TP')}
-    Score: {score}
-    propose un setup de trade avec :
-	– point d’entrée optimal
-	– stop loss technique
-	– take profit 1, 2 et 3
-	– ratio risk/reward minimal 1:2
-	– invalidation claire du setup.”.
-    “Calcule la taille de position idéale si mon capital est de 1 000 USDT,risque maximum 1% par trade,en tenant compte du stop loss proposé.”	
-		"""
+You are a professional Crypto Quant Analyst.
+Asset: {trade.get('asset')}
+Price: {trade.get('price')}
+Bias: {trade.get('bias')}
+Stop Loss: {trade.get('SL')}
+Take Profit: {trade.get('TP')}
+Score: {score}
+
+Propose a trade setup with:
+– Optimal entry point
+– Technical stop loss
+– Take profit 1, 2 and 3
+– Minimum risk/reward ratio 1:2
+– Clear invalidation of the setup
+
+Also calculate ideal position size for a capital of 1,000 USDT,
+with maximum risk 1% per trade, considering the proposed stop loss.
+"""
 
     try:
-        # Ampiasao gemini-2.5-flash (version marina)
-        res = ai_client.models.generate_content(
+        res = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt
         )
@@ -135,20 +146,20 @@ def ai_explain(trade, score):
     except Exception as e:
         return f"Analysis Error: {e}"
 
+
 def get_ai_calendar(asset):
-    # Mitovy amin'ny etsy ambony ny fanitsiana ny key
-    try:
-        key = "AIzaSyCzo49qIOoADBq55SdTLltg-0vqnipWl4w"
-    except Exception:
-        return "Gemini API Key missing."
-        
-    today_date = datetime.now().strftime("%B %d, %Y")
-    prompt = f""" Today is {today_date}. Provide Economic Calendar for next 2 days for {asset}.
-	IMPORTANT: Always use the European date format (DD/MM/YYYY) in your response.
-	"""
+    client = get_ai_client()
+    if client is None:
+        return "⚠️ Gemini API Key missing in secrets.toml"
+
+    today_date = datetime.now().strftime("%d/%m/%Y")
+    prompt = f"""
+Today is {today_date}. Provide Economic Calendar for the next 2 days for {asset}.
+IMPORTANT: Always use the European date format (DD/MM/YYYY) in your response.
+"""
 
     try:
-        res = ai_client.models.generate_content(
+        res = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt
         )
