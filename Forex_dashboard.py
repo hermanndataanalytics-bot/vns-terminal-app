@@ -279,17 +279,26 @@ def export_ultra_premium_pdf(asset, ls, tp, sl, ai_comment, ai_calendar,
     elements.append(Spacer(1,15))
 
     # ---------------------
-    # Compute Metrics
+    # Compute Metrics (VOAHITSY)
     # ---------------------
     trades = np.array(trades)
-    winrate = round((trades > 0).mean()*100,2)
-    profit = trades[trades>0].sum()
-    loss = abs(trades[trades<0].sum())
-    profit_factor = round(profit/loss,2) if loss != 0 else 0
-    sharpe = round((trades.mean()/trades.std())*np.sqrt(252),2) if trades.std()!=0 else 0
-    equity = np.cumsum(trades)
-    max_drawdown = round((equity - np.maximum.accumulate(equity)).min(),2)
-
+    
+    # Jerena raha misy data ny trades
+    if trades.size > 0:
+        winrate = round((trades > 0).mean() * 100, 2)
+        profit = trades[trades > 0].sum()
+        loss = abs(trades[trades < 0].sum())
+        profit_factor = round(profit / loss, 2) if loss != 0 else 0
+        sharpe = round((trades.mean() / trades.std()) * np.sqrt(252), 2) if trades.std() != 0 else 0
+        equity = np.cumsum(trades)
+        max_drawdown = round((equity - np.maximum.accumulate(equity)).min(), 2)
+    else:
+        # Sanda fenoina raha mbola tsy misy trades
+        winrate = 0
+        profit_factor = 0
+        sharpe = 0
+        max_drawdown = 0
+        equity = np.array([0]) # Mba tsy hanao diso ny sary (chart)
     # ---------------------
     # Performance Metrics Table
     # ---------------------
@@ -1565,4 +1574,3 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
-
