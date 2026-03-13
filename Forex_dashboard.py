@@ -28,6 +28,8 @@ from datetime import datetime
 import math
 import requests
 import json
+from file_name import export_ultra_premium_pdf
+
     
 def get_atr(df, period=14):
     df = df.copy()
@@ -1269,7 +1271,7 @@ def main(limit=12):
                             try:
 
                                 res = client.models.generate_content(
-                                    model="gemini-2.5-flash",
+                                    model="gemini-1.5-flash",
                                     contents=prompt
                                 )
 
@@ -1441,24 +1443,28 @@ def main(limit=12):
             if not report_data:
                 st.warning("⚠️ Please run AI Analysis first to generate a report.")
             else:
-                # Ity bokotra PREPARE ity izao dia efa lava be (full width)
+                # PREPARE PDF BUTTON
                 if st.button("📄 PREPARE OFFICIAL REPORT", use_container_width=True):
                     with st.spinner("Generating professional PDF report..."):
                         try:
                             ai_cal = st.session_state.get("news", "N/A: No economic data streamed.")
-                            pdf_bytes = export_pro_pdf(
+
+                            # Soloina export_pro_pdf -> export_ultra_premium_pdf
+                            pdf_bytes = export_ultra_premium_pdf(
                                 ASSET_MAP[ticker], 
                                 ls, tp, sl, 
                                 report_data, 
                                 ai_cal, fig, 
-                                f"Institutional Briefing: {ticker}"
+                                f"Institutional Briefing: {ticker}",
+                                trades  # aza adino ny lisitry ny trades raha mila metrics
                             )
+
                             st.session_state.ready_pdf = pdf_bytes
                             st.success("✅ Report Ready for Download!")
                         except Exception as e:
                             st.error(f"Error inside PDF generator: {e}")
 
-                # Ity bokotra DOWNLOAD ity koa dia efa lava be (full width)
+                # DOWNLOAD BUTTON
                 if "ready_pdf" in st.session_state:
                     st.download_button(
                         label="⬇️ CLICK HERE TO SAVE PDF",
@@ -1467,7 +1473,7 @@ def main(limit=12):
                         mime="application/pdf",
                         use_container_width=True
                     )
-                    
+
                 # --- ETO NO MIHAKATONA NY TRY LEHIBE REHETRA ---
     except Exception as e:
         st.error(f"Error loading data or processing: {e}")
@@ -1537,5 +1543,3 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
-
-
