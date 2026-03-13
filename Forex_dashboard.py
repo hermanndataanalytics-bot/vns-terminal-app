@@ -121,7 +121,7 @@ def get_ai_deep_analysis(asset_label, current_price, df):
         return res.text
 
     except Exception as e:
-        return f"AI Error: {str(e)}
+        return f"AI Error: {str(e)}"
 # -------------------------------------------------
 # Live Market News
 # -------------------------------------------------
@@ -1537,3 +1537,4 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
+
