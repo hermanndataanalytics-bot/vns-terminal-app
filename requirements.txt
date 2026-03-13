@@ -19,3 +19,4 @@ reportlab
 oauth2client
 streamlit-autorefresh
 openai
+kaleido==0.1.0post1
