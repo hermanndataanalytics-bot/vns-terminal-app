@@ -1270,7 +1270,7 @@ def main(limit=12):
                             try:
 
                                 res = client.models.generate_content(
-                                    model="gemini-1.5-flash",
+                                    model="gemini-2.5-flash",
                                     contents=prompt
                                 )
 
@@ -1542,4 +1542,5 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
+
 
