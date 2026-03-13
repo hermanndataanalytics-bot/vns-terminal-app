@@ -28,7 +28,6 @@ from datetime import datetime
 import math
 import requests
 import json
-from file_name import export_ultra_premium_pdf
 
     
 def get_atr(df, period=14):
@@ -1543,3 +1542,4 @@ def show_page():
         st.error(f"Error loading page: {e}")
 
 # Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
+
