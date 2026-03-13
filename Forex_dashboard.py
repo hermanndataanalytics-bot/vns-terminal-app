@@ -37,7 +37,7 @@ from datetime import datetime
 import math
 import requests
 import json
-
+from groq import Groq 
 
     
 def get_atr(df, period=14):
@@ -88,51 +88,46 @@ def get_ai_client():
         return None
 
 # -------------------------------------------------
-# Deep AI Market Analysis
-# -------------------------------------------------
+import streamlit as st
+from groq import Groq # Aza adino ny nampiditra 'groq' ao amin'ny requirements.txt
+
 def get_ai_deep_analysis(asset_label, current_price, df):
-    # Maka ny data farany ho an'ny AI
+    # 1. Undatabase Preparation
     try:
         last_data = df.tail(15).to_string()
     except:
         last_data = "No market dataframe available"
 
-    prompt = f"""
-    You are a professional hedge fund quantitative analyst.
+    prompt = f"Analyze {asset_label} at price {current_price}. Recent data: {last_data}..."
 
-    Asset: {asset_label}
-    Current Price: {current_price}
-
-    Recent Market Data:
-    {last_data}
-
-    Provide a concise institutional-style analysis including:
-    1. Market Bias (Bullish / Bearish / Neutral)
-    2. Key Support Levels
-    3. Key Resistance Levels
-    4. Suggested Entry Zone
-    5. Stop Loss
-    6. Take Profit targets
-    7. Short explanation of market structure
-
-    Respond in clear trading format.
-    """
-
+    # --- DINGANA 1: ANDRAMANA NY GEMINI (PRIMARY) ---
     try:
         client = get_ai_client()
-        if client is None:
-            return "⚠️ AI system unavailable (API key issue)."
-
-        # Hamarino raha mbola 'gemini-2.5-flash' no iantsoana ny model-nao
-        # (Ohatra: 'gemini-1.5-flash' matetika no ampiasaina izao)
-        res = client.models.generate_content(
-            model="gemini-2.5-flash", 
-            contents=prompt
-        )
-        return res.text
+        res = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+        return f"🟢 **[Gemini Analysis]**\n\n{res.text}"
 
     except Exception as e:
-        return f"AI Error: {str(e)}"
+        # --- DINGANA 2: FALLBACK ANY AMIN'NY GROQ (SECONDARY - GEMMA 3 27B) ---
+        st.warning("🔄 Gemini quota reached. Switching to Gemma 3 27B...")
+        
+        try:
+            # Miantso ny Groq API
+            groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+            
+            completion = groq_client.chat.completions.create(
+                model="gemma-3-27b-it", # Modely matanjaka manana quota 14,400
+                messages=[
+                    {"role": "system", "content": "You are an institutional hedge fund analyst."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+                max_tokens=1000,
+            )
+            return f"🟡 **[Gemma 3 27B Backup]**\n\n{completion.choices[0].message.content}"
+            
+        except Exception as backup_error:
+            return f"❌ All AI models failed. Error: {str(backup_error)}"
+			
 # -------------------------------------------------
 # Live Market News
 # -------------------------------------------------
