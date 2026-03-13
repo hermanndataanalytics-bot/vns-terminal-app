@@ -283,22 +283,28 @@ def export_ultra_premium_pdf(asset, ls, tp, sl, ai_comment, ai_calendar,
     # ---------------------
     trades = np.array(trades)
     
-    # Jerena raha misy data ny trades
+    # Jerena raha misy trade farafahakeliny iray vao manao kajy
     if trades.size > 0:
         winrate = round((trades > 0).mean() * 100, 2)
         profit = trades[trades > 0].sum()
         loss = abs(trades[trades < 0].sum())
         profit_factor = round(profit / loss, 2) if loss != 0 else 0
-        sharpe = round((trades.mean() / trades.std()) * np.sqrt(252), 2) if trades.std() != 0 else 0
+        
+        # Fisorohana ny division by zero raha tsy miova ny trades
+        std_val = trades.std()
+        sharpe = round((trades.mean() / std_val) * np.sqrt(252), 2) if std_val != 0 else 0
+        
         equity = np.cumsum(trades)
+        # Eto ilay erreur teo: np.maximum.accumulate dia mila array tsy foana
         max_drawdown = round((equity - np.maximum.accumulate(equity)).min(), 2)
     else:
-        # Sanda fenoina raha mbola tsy misy trades
-        winrate = 0
-        profit_factor = 0
-        sharpe = 0
-        max_drawdown = 0
-        equity = np.array([0]) # Mba tsy hanao diso ny sary (chart)
+        # Sanda default raha mbola tsy nisy trades
+        winrate = 0.0
+        profit_factor = 0.0
+        sharpe = 0.0
+        max_drawdown = 0.0
+        equity = np.array([0])
+		
     # ---------------------
     # Performance Metrics Table
     # ---------------------
