@@ -88,45 +88,37 @@ def get_ai_client():
         return None
 
 # -------------------------------------------------
-from groq import Groq
-import streamlit as st
-
 def get_ai_deep_analysis(asset_label, current_price, df):
-    # Fanomanana ny Prompt
-    try:
-        last_data = df.tail(15).to_string()
-    except:
-        last_data = "No market data."
+    # Prompt fanomanana
+    prompt = f"Analyze {asset_label} at {current_price}..."
 
-    prompt = f"Analyze {asset_label} at {current_price}. Recent data: {last_data}"
-
-    # --- 1. GEMINI 2.5 FLASH (Primary) ---
+    # --- 1. GEMINI 2.5 FLASH ---
     try:
-        client = get_ai_client() # Ny client-nao efa misy
-        res = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        client = get_ai_client()
+        # Nampiana 'models/' araka ny sary nalefanao
+        res = client.models.generate_content(
+            model="models/gemini-2.5-flash", 
+            contents=prompt
+        )
         return f"🟢 **[Gemini 2.5 Flash]**\n\n{res.text}"
 
     except Exception:
-        # --- 2. GEMMA 3 27B (Google Backup) ---
+        # --- 2. GEMMA 3 27B ---
         try:
-            st.info("🔄 Gemini busy... Trying Gemma 3 27B")
-            res = client.models.generate_content(model="models/gemma-3-27b-it", contents=prompt)
+            st.info("🔄 Gemini Flash quota reached. Trying Gemma 3 27B...")
+            # Nampiana 'models/' eto koa
+            res = client.models.generate_content(
+                model="models/gemma-3-27b-it", 
+                contents=prompt
+            )
             return f"🟡 **[Gemma 3 27B]**\n\n{res.text}"
             
-        except Exception:
-            # --- 3. GROQ LLAMA 3.3 (Emergency Backup) ---
-            st.warning("🔄 Switching to Groq (Llama 3.3 70B)")
-            try:
-                groq_client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-                completion = groq_client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7
-                )
-                return f"🔵 **[Groq - Llama 3.3]**\n\n{completion.choices[0].message.content}"
-            except Exception as e:
-                return f"❌ All AI models failed. Error: {str(e)}"
-				
+        except Exception as e:
+            # --- 3. GROQ (LLAMA 3.3) ---
+            st.warning(f"🔄 Google API limit reached. Switching to Groq...")
+            # Miantso an'ilay function call_groq_fallback efa nataontsika teo
+            return call_groq_fallback(prompt)
+			
 # -------------------------------------------------
 # Live Market News
 # -------------------------------------------------
@@ -1573,4 +1565,4 @@ def show_page():
     except Exception as e:
         st.error(f"Error loading page: {e}")
 
-# Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany                             
+# Fafao tanteraka ilay if __name__ == "__main__": any amin'ny farany
