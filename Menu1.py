@@ -68,8 +68,14 @@ def generate_invoice(user_email, plan_name, price):
 # Raha nampiasa st-supabase-connection ianao
 conn = st.connection("supabase", type=SupabaseConnection)	
 
+<<<<<<< HEAD
 def apply_ultra_premium_ui(status_text="SYSTEM ONLINE"):
 
+=======
+
+def apply_ultra_premium_ui(status_text="SYSTEM ONLINE"):
+
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
     # Loko arakaraka ny status
     if status_text.upper() == "SYSTEM ONLINE":
         led_color = "#22c55e"
@@ -328,6 +334,44 @@ def get_user_data(email):
     return doc.to_dict() if doc.exists else None
 
 
+<<<<<<< HEAD
+=======
+# =========================================================
+# 4. IMAGE UPLOAD (IMGBB) - Voarindra
+# =========================================================
+def upload_to_imgbb(image_file):
+    """
+    Mandefa sary any amin'ny ImgBB ary mamerina ny URL-ny sary.
+    """
+    api_key = st.secrets["IMGBB_API_KEY"]
+    url = "https://api.imgbb.com/1/upload"
+
+    try:
+        # Vakiana ny sary ary avadika ho base64
+        image_data = image_file.read()
+        base64_image = base64.b64encode(image_data)
+
+        payload = {"key": api_key, "image": base64_image}
+
+        # Alefa ny request
+        response = requests.post(url, payload)
+        res_data = response.json()
+
+        if response.status_code == 200:
+            # Ity 'url' ity no ilay lien mivantana (.jpg na .png)
+            return res_data["data"]["url"]
+        else:
+            print(
+                f"Error ImgBB: {res_data.get('error', {}).get('message', 'Unknown error')}"
+            )
+            return None
+
+    except Exception as e:
+        print(f"Exception upload: {e}")
+        return None
+
+
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
 def get_base64_of_bin_file(bin_file):
     with open(bin_file, "rb") as f:
         data = f.read()
@@ -437,9 +481,20 @@ def verify_payment(txid):
 
 def admin_panel():
     # --- 1. CONFIGURATION & IMPORTS ---
+<<<<<<< HEAD
     from st_supabase_connection import SupabaseConnection
     import time
     import pandas as pd
+=======
+    try:
+        from firebase_admin import firestore
+        import time
+
+        db = firestore.client()
+    except Exception as e:
+        st.error(f"Error connecting to DB: {e}")
+        return
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
 
     try:
         # Mifandray amin'ny Supabase (Ampiasao ny SERVICE_ROLE_KEY ao amin'ny secrets)
@@ -463,6 +518,7 @@ def admin_panel():
 
     # --- TAB 1: PENDING PAYMENTS ---
     with t1:
+<<<<<<< HEAD
         st.subheader("📊 Dashboard & Fankatoavana")
 
         try:
@@ -492,9 +548,20 @@ def admin_panel():
             # 4. Lisitry ny Pending (Ilay teo aloha)
             pends = [row for row in all_data if row['status'] == 'pending']
             
+=======
+        st.subheader("Fankatoavana ny Fandoavam-bola")
+
+        try:
+            # Fakana ny fandoavam-bola miandry
+            pends = (
+                db.collection("pending_payments").where("status", "==", "pending").get()
+            )
+
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
             if not pends:
                 st.info("Tsy misy fandoavam-bola miandry amin'izao.")
             else:
+<<<<<<< HEAD
                 # Eto isika dia efa manana 'pends' izay List avy amin'ny res.data
                 for pay in pends:
                     # Ao amin'ny Supabase, ny 'pay' dia efa dictionary sahady
@@ -504,6 +571,13 @@ def admin_panel():
                     user_email = pay.get("email") or pay.get("user_uid")
                     # Ny ID ao amin'ny Supabase dia azo jerena mivantana: pay['id']
                     row_id = pay.get("id")
+=======
+                for p in pends:
+                    pay = p.to_dict()
+
+                    # --- MITADY UID NA EMAIL ---
+                    user_email = pay.get("uid") or pay.get("email")
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
 
                     with st.container(border=True):
                         col1, col2, col3 = st.columns([2, 2, 1])
@@ -535,14 +609,28 @@ def admin_panel():
                             # --- 1. BOKOTRA APPROVE ---
                             if st.button(
                                 "Approve ✅",
+<<<<<<< HEAD
                                 key=f"btn_app_{row_id}", # Ampiasao ny row_id vaovao
+=======
+                                key=f"btn_app_{p.id}",
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
                                 use_container_width=True,
                             ):
                                 if user_email:
                                     try:
+<<<<<<< HEAD
                                         actual_plan = pay.get("plan", "Basic Access")
 
                                         # B. Mikarakara ny Invoice PDF (Ny lojikanao taloha)
+=======
+                                        # A. Faritana aloha ny plan sy ny sanda
+                                        payment_data = p.to_dict()
+                                        actual_plan = payment_data.get(
+                                            "plan", "Basic Access"
+                                        )
+
+                                        # B. Mikarakara ny Invoice PDF
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
                                         prices_map = {
                                             "Basic Access": 19,
                                             "Pro Access": 49,
@@ -550,18 +638,55 @@ def admin_panel():
                                             "Premium Elite": 149,
                                         }
                                         paid_amount = prices_map.get(actual_plan, 0)
+<<<<<<< HEAD
                                         
                                         # (Ataovy azo antoka fa efa nampidirinao ny function generate_invoice)
                                         invoice_file = generate_invoice(user_email, actual_plan, paid_amount)
                                         success = send_email_with_invoice(user_email, actual_plan, invoice_file)
+=======
+                                        invoice_file = generate_invoice(
+                                            user_email, actual_plan, paid_amount
+                                        )
+
+                                        # C. Mandefa mailaka miaraka amin'ny Invoice
+                                        success = send_email_with_invoice(
+                                            user_email, actual_plan, invoice_file
+                                        )
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
 
                                         if success:
-                                            st.success("Mailaka sy Invoice nalefa soa aman-tsara!")
+                                            st.success(
+                                                "Mailaka sy Invoice nalefa soa aman-tsara!"
+                                            )
 
+<<<<<<< HEAD
                                         # D. Update Supabase Table 'payment_proofs' ho approved
                                         conn.table("payment_proofs").update({"status": "approved"}).eq("id", row_id).execute()
 
                                         st.success(f"Nekena ny {actual_plan} ho an'i {user_email}!")
+=======
+                                        # D. Update Firestore User Access
+                                        uid = user_email.replace(".", "_")
+                                        user_ref = db.collection("users").document(uid)
+                                        user_ref.set(
+                                            {
+                                                "email": user_email,
+                                                "plan": actual_plan,
+                                                "expiry": time.time()
+                                                + (30 * 24 * 60 * 60),
+                                            },
+                                            merge=True,
+                                        )
+
+                                        # E. Update status pending_payments ho approved
+                                        db.collection("pending_payments").document(
+                                            p.id
+                                        ).update({"status": "approved"})
+
+                                        st.success(
+                                            f"Nekena ny {actual_plan} ho an'i {user_email}!"
+                                        )
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
                                         st.balloons()
                                         time.sleep(2)
                                         st.rerun()
@@ -572,11 +697,21 @@ def admin_panel():
                             # --- 2. BOKOTRA REJECT ---
                             if st.button(
                                 "Reject ❌",
+<<<<<<< HEAD
                                 key=f"btn_rej_{row_id}",
                                 use_container_width=True,
                             ):
                                 try:
                                     conn.table("payment_proofs").update({"status": "rejected"}).eq("id", row_id).execute()
+=======
+                                key=f"btn_rej_{p.id}",
+                                use_container_width=True,
+                            ):
+                                try:
+                                    db.collection("pending_payments").document(
+                                        p.id
+                                    ).update({"status": "rejected"})
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
                                     st.warning("Fandoavam-bola nolavina.")
                                     time.sleep(1)
                                     st.rerun()
@@ -584,6 +719,12 @@ def admin_panel():
                                     st.error(f"Error rejecting: {e}")
 									
 
+<<<<<<< HEAD
+=======
+        except Exception as e:
+            st.error(f"Tsy nahomby ny fakana data: {e}")
+
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
     # --- TAB 2: SEND SIGNAL ---
     with t2:
         st.subheader("Andefasana Signal Vaovao")
@@ -729,8 +870,11 @@ def main_app():
         else:
             st.error("🔒 Access Restricted to VIP Members.")
 
+<<<<<<< HEAD
 # Raha nampiasa st-supabase-connection ianao
 conn = st.connection("supabase", type=SupabaseConnection)
+=======
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
 
 def render_sidebar():
     # --- 1. PREMIUM CUSTOM CSS ---

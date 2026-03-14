@@ -282,11 +282,32 @@
             btn.disabled = true;
 
             try {
+<<<<<<< HEAD
 				// A. Upload any amin'ny Supabase Storage (Bucket: PAYEMENTS)
 				const fileName = `proofs/${emailValue}-${Date.now()}.png`;
 				const { data: storageData, error: storageError } = await _supabase.storage
 					.from('PAYEMENTS')
 					.upload(fileName, file);
+=======
+                // A. Upload to ImgBB
+				const formData = new FormData();
+				formData.append("image", file);
+
+				const IMGBB_API_KEY = "YOUR_IMGBB_KEY";
+
+				const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+					method: "POST",
+					body: formData
+				});
+
+				const data = await res.json();
+
+				if (!data.success) {
+					throw new Error("Image upload failed");
+				}
+
+				const imageUrl = data.data.url;
+>>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
 
 				if (storageError) throw storageError;
 
