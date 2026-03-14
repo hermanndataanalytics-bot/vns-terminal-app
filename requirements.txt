@@ -27,4 +27,6 @@ streamlit-autorefresh
 openai
 kaleido
 groq
+st-supabase-connection
+supabase
 >>>>>>> 8edde69c1d862a75341026c55770c2ab62e2a3ae
