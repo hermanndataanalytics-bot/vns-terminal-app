@@ -436,23 +436,17 @@ def verify_payment(txid):
 
 
 def admin_panel():
-    # --- 1. CONFIGURATION & IMPORTS ---
-    from st_supabase_connection import SupabaseConnection
-    import time
-    import pandas as pd
-
+    # --- 1. CONFIGURATION & CONNECTION ---
     try:
-        # Mifandray amin'ny Supabase (Ampiasao ny SERVICE_ROLE_KEY ao amin'ny secrets)
+        # Ampiasao ny SERVICE_ROLE_KEY ao amin'ny secrets ho an'ny Admin
         conn = st.connection("supabase", type=SupabaseConnection)
     except Exception as e:
         st.error(f"Error connecting to Supabase: {e}")
         return
-		
-    # --- 2. ADMIN CHECK (ETO NO NAMBOARINA) ---
-    # Alaina avy ao amin'ny session_state ny email vao azo ampiasaina
-    user_email = st.session_state.get("user_email", "")
-
-    is_admin = user_email == "hermannhe18@gmail.com"
+        
+    # --- 2. ADMIN CHECK ---
+    user_email_session = st.session_state.get("user_email", "")
+    is_admin = user_email_session == "hermannhe18@gmail.com"
 
     if not is_admin:
         st.warning("Tsy manana alalana ianao hijery ity pejy ity.")
@@ -464,13 +458,12 @@ def admin_panel():
     # --- TAB 1: PENDING PAYMENTS ---
     with t1:
         st.subheader("📊 Dashboard & Fankatoavana")
-
         try:
             # 1. Alaina ny data rehetra (na approved na pending)
             res_all = conn.table("payment_proofs").select("*").execute()
             all_data = res_all.data
             
-            # 2. Mikajy ny Total Revenue (Approved ihany)
+            # 2. Configuration ny vidin'ny plan tsirairay
             prices_map = {
                 "Basic Access": 19,
                 "Pro Access": 49,
@@ -478,113 +471,75 @@ def admin_panel():
                 "Premium Elite": 149,
             }
             
-            total_rev = sum(prices_map.get(row['plan'], 0) for row in all_data if row['status'] == 'approved')
-            pending_count = len([row for row in all_data if row['status'] == 'pending'])
+            # 3. FIKAJIANA REVENU
+            # Isaina ny isan'ny nandoa sy ny vola miditra (Approved ihany)
+            approved_list = [row for row in all_data if row['status'] == 'approved']
+            total_rev = sum(prices_map.get(row['plan'], 0) for row in approved_list)
+            
+            # Isaina ny pending
+            pending_pends = [row for row in all_data if row['status'] == 'pending']
+            pending_count = len(pending_pends)
 
-            # 3. Mampiseho Metrics
+            # 4. MAMPISEHO METRICS
             c1, c2, c3 = st.columns(3)
-            c1.metric("Total Revenue", f"${total_rev}")
-            c2.metric("Pending Tasks", pending_count)
-            c3.metric("Total Users Paid", len([row for row in all_data if row['status'] == 'approved']))
+            c1.metric("Total Revenue", f"${total_rev:,}")
+            c2.metric("Pending Tasks", f"{pending_count}")
+            c3.metric("Total Users Paid", f"{len(approved_list)}")
+
+            # --- REVENUE BREAKDOWN (Antsipiriany isaky ny tolotra) ---
+            with st.expander("🔍 Jereo ny Revenue isaky ny Plan"):
+                rev_cols = st.columns(len(prices_map))
+                for i, (plan_name, price) in enumerate(prices_map.items()):
+                    plan_count = len([r for r in approved_list if r['plan'] == plan_name])
+                    plan_revenue = plan_count * price
+                    rev_cols[i].metric(plan_name, f"${plan_revenue}", f"{plan_count} users")
 
             st.divider()
 
-            # 4. Lisitry ny Pending (Ilay teo aloha)
-            pends = [row for row in all_data if row['status'] == 'pending']
-            
-            if not pends:
+            # 5. LISITRY NY PENDING (NY AMBONY TEO ALOHA)
+            if not pending_pends:
                 st.info("Tsy misy fandoavam-bola miandry amin'izao.")
             else:
-                # Eto isika dia efa manana 'pends' izay List avy amin'ny res.data
-                for pay in pends:
-                    # Ao amin'ny Supabase, ny 'pay' dia efa dictionary sahady
-                    # Tsy mampiasa .to_dict() intsony
-                    
-                    # --- MITADY UID NA EMAIL ---
-                    user_email = pay.get("email") or pay.get("user_uid")
-                    # Ny ID ao amin'ny Supabase dia azo jerena mivantana: pay['id']
+                for pay in pending_pends:
                     row_id = pay.get("id")
+                    u_email = pay.get("email") or pay.get("user_uid")
 
                     with st.container(border=True):
                         col1, col2, col3 = st.columns([2, 2, 1])
-
                         with col1:
-                            if not user_email:
-                                st.error("⚠️ User ID is Missing!")
-                            else:
-                                st.markdown(f"👤 **User:** `{user_email}`")
-
-                            st.markdown(f"💎 **Plan Requested:** `{pay.get('plan')}`")
+                            st.markdown(f"👤 **User:** `{u_email}`")
+                            st.markdown(f"💎 **Plan:** `{pay.get('plan')}`")
                             st.markdown(f"🔗 **TXID:** `{pay.get('txid')}`")
-                            # Ovaina 'created_at' raha izay no anarany ao amin'ny Supabase SQL
                             st.caption(f"📅 Date: {pay.get('created_at', '-')}")
 
                         with col2:
-                            st.write("🖼️ **Proof of Payment**")
-                            # Ampiasao ny 'image_url' (anarana nampiasaintsika tany amin'ny SQL)
                             url = pay.get("image_url")
                             if url:
                                 st.image(url, use_container_width=True)
-                                st.markdown(f"[Jereo mivantana ny sary]({url})")
                             else:
-                                st.warning("Tsy misy URL sary hita ao amin'ny DB.")
+                                st.warning("No image URL")
 
                         with col3:
-                            st.write("Action")
+                            # APPROVE
+                            if st.button("Approve ✅", key=f"app_{row_id}", use_container_width=True):
+                                # UPDATE SUPABASE
+                                conn.table("payment_proofs").update({"status": "approved"}).eq("id", row_id).execute()
+                                
+                                # Eto ianao no mampiditra ny generate_invoice raha ilaina
+                                st.success("Nekena!")
+                                time.sleep(1)
+                                st.rerun()
 
-                            # --- 1. BOKOTRA APPROVE ---
-                            if st.button(
-                                "Approve ✅",
-                                key=f"btn_app_{row_id}", # Ampiasao ny row_id vaovao
-                                use_container_width=True,
-                            ):
-                                if user_email:
-                                    try:
-                                        actual_plan = pay.get("plan", "Basic Access")
+                            # REJECT
+                            if st.button("Reject ❌", key=f"rej_{row_id}", use_container_width=True):
+                                conn.table("payment_proofs").update({"status": "rejected"}).eq("id", row_id).execute()
+                                st.warning("Nolavina!")
+                                time.sleep(1)
+                                st.rerun()
+        except Exception as e:
+            st.error(f"Error in Tab 1: {e}")
 
-                                        # B. Mikarakara ny Invoice PDF (Ny lojikanao taloha)
-                                        prices_map = {
-                                            "Basic Access": 19,
-                                            "Pro Access": 49,
-                                            "Elite Access": 99,
-                                            "Premium Elite": 149,
-                                        }
-                                        paid_amount = prices_map.get(actual_plan, 0)
-                                        
-                                        # (Ataovy azo antoka fa efa nampidirinao ny function generate_invoice)
-                                        invoice_file = generate_invoice(user_email, actual_plan, paid_amount)
-                                        success = send_email_with_invoice(user_email, actual_plan, invoice_file)
-
-                                        if success:
-                                            st.success("Mailaka sy Invoice nalefa soa aman-tsara!")
-
-                                        # D. Update Supabase Table 'payment_proofs' ho approved
-                                        conn.table("payment_proofs").update({"status": "approved"}).eq("id", row_id).execute()
-
-                                        st.success(f"Nekena ny {actual_plan} ho an'i {user_email}!")
-                                        st.balloons()
-                                        time.sleep(2)
-                                        st.rerun()
-
-                                    except Exception as e:
-                                        st.error(f"Supabase Update Error: {e}")
-
-                            # --- 2. BOKOTRA REJECT ---
-                            if st.button(
-                                "Reject ❌",
-                                key=f"btn_rej_{row_id}",
-                                use_container_width=True,
-                            ):
-                                try:
-                                    conn.table("payment_proofs").update({"status": "rejected"}).eq("id", row_id).execute()
-                                    st.warning("Fandoavam-bola nolavina.")
-                                    time.sleep(1)
-                                    st.rerun()
-                                except Exception as e:
-                                    st.error(f"Error rejecting: {e}")
-									
-
-    # --- TAB 2: SEND SIGNAL ---
+    # --- TAB 2: SEND SIGNAL (OVANA HO SUPABASE) ---
     with t2:
         st.subheader("Andefasana Signal Vaovao")
         with st.form("admin_sig_form", clear_on_submit=True):
@@ -598,69 +553,49 @@ def admin_panel():
 
         if submitted:
             if pa and en:
-                col_name = "forex_signals" if m == "Forex" else "crypto_signals"
-                db.collection(col_name).add(
-                    {
-                        "pair": pa.upper(),
-                        "type": ty,
-                        "entry": en,
-                        "tp": tp if tp else "TBD",
-                        "sl": sl if sl else "TBD",
-                        "tf": "H1",
-                        "timestamp": firestore.SERVER_TIMESTAMP,
-                    }
-                )
-                st.success("Signal nalefa soa aman-tsara! ✅")
+                table_name = "forex_signals" if m == "Forex" else "crypto_signals"
+                signal_data = {
+                    "pair": pa.upper(),
+                    "type": ty,
+                    "entry": en,
+                    "tp": tp if tp else "TBD",
+                    "sl": sl if sl else "TBD",
+                    "tf": "H1"
+                }
+                # Ampiasao ny conn.table fa aza mampiasa db.collection
+                conn.table(table_name).insert(signal_data).execute()
+                st.success("Signal voatahiry ao amin'ny Supabase! ✅")
             else:
                 st.error("Fenoy ny Pair sy ny Entry azafady.")
 
     # --- TAB 3: USER MANAGEMENT (GOOGLE SHEETS) ---
     with t3:
-        st.header("📝 Fanovana ny Database (Editable)")
+        st.header("📝 Editable Database")
         try:
             import gspread
             from google.oauth2.service_account import Credentials
 
-            scope = [
-                "https://www.googleapis.com/auth/spreadsheets",
-                "https://www.googleapis.com/auth/drive",
-            ]
+            scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+            
             if "gcp_service_account" not in st.secrets:
-                st.error(
-                    "Tsy hita ny credentials 'gcp_service_account' ao amin'ny secrets."
-                )
+                st.error("Credential 'gcp_service_account' missing in secrets.")
             else:
-                creds_info = st.secrets["gcp_service_account"]
-                creds = Credentials.from_service_account_info(creds_info, scopes=scope)
+                creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
                 client = gspread.authorize(creds)
-
-                # Open Sheet
                 spreadsheet = client.open("Drafitra Vns")
                 sheet = spreadsheet.worksheet("users")
-                records = sheet.get_all_records()
+                
+                df = pd.DataFrame(sheet.get_all_records())
+                edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic", key="editor_v1")
 
-                df = pd.DataFrame(records) if records else pd.DataFrame()
-
-                # Editor
-                edited_df = st.data_editor(
-                    df, use_container_width=True, num_rows="dynamic", key="vns_ed_v10"
-                )
-
-                # Save Button (TSY MAINTSY MIFANARAKA NY INDENTATION)
-                if st.button("Tehirizo ny fiovana 💾", key="btn_save_sheet"):
-                    try:
-                        data_to_save = [
-                            edited_df.columns.values.tolist()
-                        ] + edited_df.values.tolist()
-                        sheet.update(range_name="A1", values=data_to_save)
-                        st.success("✅ Tafiditra soa aman-tsara ny fanovana!")
-                        time.sleep(1)
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Tsy nahomby ny fitehirizana: {e}")
+                if st.button("Tehirizo ny fiovana 💾"):
+                    data_to_save = [edited_df.columns.values.tolist()] + edited_df.values.tolist()
+                    sheet.update(values=data_to_save, range_name="A1")
+                    st.success("Tafiditra ny fanovana!")
+                    time.sleep(1)
+                    st.rerun()
         except Exception as e:
             st.error(f"Google Sheets Error: {e}")
-
 
 def main_app():
 
