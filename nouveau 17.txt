@@ -100,25 +100,25 @@
         </div>
 
         <div class="glass p-8 rounded-3xl flex flex-col">
-            <h3 class="text-gray-400 font-bold text-sm">ELITE</h3>
+            <h3 class="text-gray-400 font-bold text-sm">ELITE ACCESS</h3>
             <div class="my-6 text-4xl font-extrabold">$<span class="price" data-monthly="99" data-lifetime="999">99</span><span class="duration text-xs text-gray-500">/mo</span></div>
             <ul class="text-xs space-y-3 mb-8 flex-grow text-gray-400">
                 <li>✅ Everything in PRO</li>
                 <li>✅ Crypto Quant</li>
-                <li>✅ Neural Predictions</li>
+                <li>✅ Neural Prediction</li>
                 <li>✅ Macro Calendar</li>
             </ul>
             <button onclick="openPayment('ELITE')" class="w-full bg-gray-800 py-3 rounded-xl font-bold hover:bg-gray-700">Pay with Crypto</button>
         </div>
 
         <div class="glass p-8 rounded-3xl flex flex-col">
-            <h3 class="text-gray-400 font-bold text-sm">PREMIUM</h3>
+            <h3 class="text-gray-400 font-bold text-sm">PREMIUM ELITE</h3>
             <div class="my-6 text-4xl font-extrabold">$<span class="price" data-monthly="149" data-lifetime="1499">149</span><span class="duration text-xs text-gray-500">/mo</span></div>
             <ul class="text-xs space-y-3 mb-8 flex-grow text-gray-400">
-                <li>✅ Everything in ELITE</li>
+                <li>✅ Everything in ELITE ACCESS</li>
                 <li>✅ Full Access</li>
                 <li>✅ Priority 24/7</li>
-                <li>✅ VIP Database</li>
+                <li>✅ VIP Databases</li>
             </ul>
             <button onclick="openPayment('PREMIUM')" class="w-full bg-gray-800 py-3 rounded-xl font-bold hover:bg-gray-700">Pay with Crypto</button>
         </div>
@@ -180,28 +180,15 @@
     </section>
 
     <footer class="bg-[#05070a] border-t border-blue-500/20 mt-24">
-    <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center text-gray-400">
-        
-        <div class="flex items-center gap-3 mb-4 md:mb-0">
-            
-            <!-- Crypto Logo -->
-            <div class="bg-blue-600 p-2 rounded-lg w-9 h-9 flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" 
-                     class="w-5 h-5 text-white" 
-                     fill="currentColor" 
-                     viewBox="0 0 24 24">
-                    <path d="M13.5 3v2.1c2.5.3 4.1 1.8 4.1 4 0 2.4-1.7 3.6-4.8 4.2v3.2c1.5-.2 2.5-.9 2.8-2.2h2.7c-.3 2.6-2.2 4.2-5.5 4.5V21h-1.7v-2.2c-3.2-.3-5.3-2.1-5.4-4.8h2.8c.1 1.5 1.1 2.4 2.7 2.6v-3.4c-3-.6-4.6-1.8-4.6-4.2 0-2.3 1.8-3.8 4.6-4V3h1.7zm-1.7 8.1V7.8c-1.4.2-2.2.8-2.2 1.7 0 .9.6 1.4 2.2 1.6zm1.7 2.7v3.4c1.5-.2 2.4-.9 2.4-1.8 0-1-.7-1.4-2.4-1.6z"/>
-                </svg>
+        <div class="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row justify-between items-center text-gray-400">
+            <div class="flex items-center gap-3 mb-4 md:mb-0">
+                <div class="bg-blue-600 p-2 rounded-lg w-8 h-8"></div>
+                <span class="text-white font-semibold text-lg">CryptoPay</span>
             </div>
-
-            <span class="text-white font-semibold text-lg">CryptoPay</span>
+            <div class="text-sm text-gray-500">
+                2026 CryptoPay. Secure crypto payment verification.
+            </div>
         </div>
-
-        <div class="text-sm text-gray-500">
-            © 2026 CryptoPay. Secure crypto payment verification.
-        </div>
-
-    </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -282,32 +269,23 @@
             btn.disabled = true;
 
             try {
-				// A. Upload any amin'ny Supabase Storage (Bucket: PAYEMENTS)
-				const fileName = `proofs/${emailValue}-${Date.now()}.png`;
-				const { data: storageData, error: storageError } = await _supabase.storage
-					.from('PAYEMENTS')
-					.upload(fileName, file);
+                // A. Upload to ImgBB
+                const formData = new FormData();
+                formData.append("image", file);
+                const res = await fetch("https://api.imgbb.com/1/upload?key=b795e372fe07808e8261bd73ee82159e", { method: "POST", body: formData });
+                const data = await res.json();
+                const imageUrl = data.data.url;
 
-				if (storageError) throw storageError;
-
-				// Maka ny URL an'ilay sary vao tafakatra
-				const { data: urlData } = _supabase.storage.from('PAYEMENTS').getPublicUrl(fileName);
-				const imageUrl = urlData.publicUrl;
-
-				// B. Save any amin'ny Supabase Table (payment_proofs)
-				const { error: dbError } = await _supabase
-					.from('payment_proofs')
-					.insert([{
-						user_uid: emailValue, // na ampiasao ny UID raha misy
-						email: emailValue,
-						plan: planName,
-						txid: txidValue,
-						image_url: imageUrl,
-						status: "pending",
-						duration: currentBilling === 'monthly' ? 'Monthly' : 'Lifetime'
-					}]);
-
-				if (dbError) throw dbError;
+                // B. Save to Firestore
+                await db.collection("pending_payments").add({
+                    email: emailValue,
+                    plan: planName,
+                    txid: txidValue,
+                    receipt_url: imageUrl,
+                    status: "pending",
+                    duration: currentBilling === 'monthly' ? 'Monthly' : 'Lifetime',
+                    date: new Date().toISOString()
+                });
 
                 // C. Show Success UI
                 const billingText = currentBilling === 'monthly' ? '(Monthly)' : '(Lifetime)';
@@ -326,5 +304,3 @@
     </script>
 </body>
 </html>
-
-
