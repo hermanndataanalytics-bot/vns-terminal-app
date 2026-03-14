@@ -1,3 +1,0 @@
-[submodule "payments"]
-	path = payments
-	url = https://github.com/hermanndataanalytics-bot/vns-payments.git
